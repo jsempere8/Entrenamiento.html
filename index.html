@@ -11,6 +11,8 @@
   --card: #2c2c2e;
   --text: #ffffff;
   --text-dim: #a1a1a6;
+  --accent: #34c759;
+  --danger: #ff3b30;
 }
 body {
   font-family: -apple-system, system-ui, sans-serif;
@@ -18,9 +20,10 @@ body {
   color: var(--text);
   margin: 0;
   padding: 20px;
+  line-height: 1.4;
 }
-h1, h2 { font-weight: 700; margin-bottom: 8px; }
-.badge { background: var(--primary); padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+h1, h2, h3 { font-weight: 700; margin-bottom: 8px; }
+.badge { background: var(--primary); padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
 .card {
   background: var(--card);
   padding: 20px;
@@ -30,175 +33,246 @@ h1, h2 { font-weight: 700; margin-bottom: 8px; }
 }
 .exercise-item {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 0;
+  flex-direction: column;
+  padding: 15px 0;
   border-bottom: 1px solid #3a3a3c;
 }
+.exercise-image {
+  width: 100%;
+  max-width: 280px;
+  height: auto;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  align-self: center;
+  border: 1px solid #444;
+}
 .timer {
-  font-size: 2rem;
+  font-size: 2.8rem;
   font-weight: bold;
   text-align: center;
   color: var(--primary);
   margin: 10px 0;
+  font-variant-numeric: tabular-nums;
 }
 button {
   width: 100%;
   background: var(--primary);
   color: white;
   border: none;
-  padding: 15px;
-  border-radius: 12px;
+  padding: 16px;
+  border-radius: 14px;
   font-size: 16px;
   font-weight: bold;
   cursor: pointer;
-  margin-top: 10px;
 }
-button:active { opacity: 0.8; }
-.history-item { font-size: 13px; color: var(--text-dim); margin-bottom: 5px; }
+button:active { transform: scale(0.98); opacity: 0.9; }
+.btn-timer { background: transparent; border: 2px solid var(--primary); color: var(--primary); margin-top: 10px; }
+.btn-save { background: var(--accent); margin-top: 15px; }
+.history-item { font-size: 13px; color: var(--text-dim); margin-bottom: 6px; border-bottom: 1px solid #333; padding-bottom: 4px; }
 select {
   width: 100%;
   padding: 12px;
-  border-radius: 8px;
+  border-radius: 10px;
   background: #3a3a3c;
   color: white;
   border: none;
   font-size: 16px;
+  margin-top: 10px;
 }
+.routine-box { background: #3a3a3c; padding: 18px; border-radius: 12px; margin-top: 10px; border-left: 4px solid var(--primary); }
+.pulsaciones { color: var(--danger); font-weight: bold; font-size: 14px; display: block; margin-top: 8px; }
+.checklist label { display: block; font-size: 14px; margin-bottom: 10px; color: var(--text); }
+input[type="checkbox"] { transform: scale(1.3); margin-right: 10px; vertical-align: middle; }
 </style>
 </head>
 <body>
 
 <header>
-  <span id="date-label" class="badge">HOY</span>
-  <h1 id="main-title">Enfoque & Fuerza</h1>
+  <span id="date-label" class="badge">Hoy</span>
+  <h1 id="main-title">Enfoque +40</h1>
 </header>
 
-<div class="card">
-  <h2>🔥 Movilidad Preventiva</h2>
-  <p class="history-item">Evita lesiones. Haz 1 ronda de:</p>
-  <ul style="padding-left: 20px; font-size: 14px;">
-    <li>Rotación de hombros y cadera</li>
-    <li>Gato-Camello (espalda)</li>
-    <li>Sentadillas al aire (suaves)</li>
-  </ul>
-</div>
-
-<div id="routine-card" class="card">
-  <h2>🚀 Sesión de Fuerza</h2>
-  <div id="exercise-list"></div>
-  <p id="routine-meta" style="font-size: 14px; color: var(--primary);"></p>
-</div>
-
-<div class="card" style="text-align: center;">
-  <h2>⏱️ Descanso entre Series</h2>
-  <div id="timer-display" class="timer">01:30</div>
-  <button onclick="startTimer()">Iniciar Descanso</button>
-</div>
+<div id="content-area"></div>
 
 <div class="card">
-  <h2>📊 Finalizar & Evaluar</h2>
-  <p class="history-item">¿Cómo te sentiste hoy?</p>
+  <h2>📊 Registro & Nutrición</h2>
+  
+  <div class="checklist" style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #444;">
+    <p style="font-size: 13px; color: var(--accent); font-weight: bold;">LONGEVIDAD:</p>
+    <label><input type="checkbox" id="nut-prot"> Proteína (+1.6g/kg)</label>
+    <label><input type="checkbox" id="nut-water"> Hidratación (2.5L Agua)</label>
+    <label><input type="checkbox" id="nut-omega"> Omega 3 / Grasas Saludables</label>
+  </div>
+
   <select id="rpe-select">
-    <option value="">Selecciona esfuerzo (RPE)</option>
-    <option value="6">Suave (Recuperación)</option>
-    <option value="7">Bien (Esfuerzo moderado)</option>
-    <option value="8">Duro (Cerca del fallo)</option>
-    <option value="9">Muy Duro (Límite)</option>
+    <option value="">¿Cómo fue el esfuerzo (RPE)?</option>
+    <option value="5">5 - Muy suave (Recuperación)</option>
+    <option value="6">6 - Cómodo (Sube dificultad mañana)</option>
+    <option value="7">7 - Moderado (Ritmo ideal)</option>
+    <option value="8">8 - Difícil (Cerca del límite)</option>
+    <option value="9">9 - Extremo (Baja carga mañana)</option>
   </select>
-  <button style="background: #34c759;" onclick="completeWorkout()">Guardar Entrenamiento</button>
-  <p id="msg" style="text-align: center; font-size: 14px; margin-top: 10px;"></p>
+  <button class="btn-save" onclick="completeWorkout()">Guardar Sesión</button>
+  <p id="msg" style="text-align: center; font-size: 14px; margin-top: 12px; font-weight: bold;"></p>
 </div>
 
 <div class="card">
-  <h2>📈 Registro Anterior</h2>
+  <h2>📈 Historial Semanal</h2>
   <div id="history-log"></div>
 </div>
 
 <script>
-/* CONFIGURACIÓN Y ESTADO */
-const config = {
-  exercises: ["Sentadillas", "Flexiones (Push-ups)", "Zancadas", "Plancha (segundos)", "Puente de Glúteo"],
-  restTime: 90
-};
+/* CONFIGURACIÓN */
+const exercises = [
+  { name: "Sentadillas", img: "https://i.ibb.co/L5hY5M2/squat.gif" },
+  { name: "Flexiones", img: "https://i.ibb.co/3Wqj2Bq/pushup.gif" },
+  { name: "Zancadas", img: "https://i.ibb.co/Zc1yG0y/lunge.gif" },
+  { name: "Plancha", img: "https://i.ibb.co/b3gYmP4/plank.gif" }
+];
 
-let stats = JSON.parse(localStorage.getItem('workout_stats')) || {
-  level: 1,
-  reps: 10,
-  rounds: 3,
-  history: []
-};
+const cardioRoutines = [
+  { 
+    title: "🔥 HIIT 40' (Zonas 2-4)", 
+    desc: "10' Calentamiento + 10 ciclos de (1' en <b>Zona 4 del Watch</b> / 1' Caminar en <b>Zona 1-2</b>) + 10' Enfriamiento.",
+    target: "Esfuerzo: 150-160 bpm / Recuperación: <130 bpm"
+  },
+  { 
+    title: "🏃 Base Aeróbica (Zona 2)", 
+    desc: "5' Calentamiento + 30' constantes en <b>ZONA 2</b> (Color verde claro en el reloj). Mantén ritmo de charla. Si subes a Zona 3, frena.",
+    target: "Ritmo constante: 125-135 bpm"
+  },
+  { 
+    title: "⛰️ Pendiente/Escaleras (Zona 2-3)", 
+    desc: "40' Caminata rápida con inclinación. Mantente entre el límite de la <b>Zona 2 y el inicio de la Zona 3</b>.",
+    target: "Pulsaciones objetivo: 130-140 bpm"
+  }
+];
 
-function renderRoutine() {
-  const list = document.getElementById('exercise-list');
-  list.innerHTML = config.exercises.map(ex => `
-    <div class="exercise-item">
-      <span>${ex}</span>
-      <span style="font-weight: bold;">${stats.reps} reps</span>
-    </div>
-  `).join('');
-  document.getElementById('routine-meta').innerText = `Total: ${stats.rounds} rondas | Descanso: 90s`;
+/* VARIABLES DE ESTADO */
+let level = parseInt(localStorage.getItem("f_level") || "1");
+let reps = parseInt(localStorage.getItem("f_reps") || "10");
+let rounds = parseInt(localStorage.getItem("f_rounds") || "3");
+
+const days = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+const today = new Date();
+const dayName = days[today.getDay()];
+const sessions = { 
+  lunes: "fuerza", martes: "aerobico", miércoles: "fuerza", 
+  jueves: "aerobico", viernes: "fuerza_ligera", sábado: "montaña", domingo: "montaña" 
+};
+const todayType = sessions[dayName] || "descanso";
+
+/* RENDERIZADO PRINCIPAL */
+function init() {
+  document.getElementById('date-label').innerText = dayName;
+  const area = document.getElementById('content-area');
+  
+  if (todayType.includes("fuerza")) {
+    area.innerHTML = `
+      <div class="card">
+        <h2>🔥 Movilidad Preventiva</h2>
+        <p style="font-size:14px; color:var(--text-dim)">Protege hombros y espalda baja. Haz 1 ronda de movilidad articular antes de empezar.</p>
+      </div>
+      <div class="card">
+        <h2>🚀 Fuerza: Nivel ${level}</h2>
+        ${exercises.map(ex => `
+          <div class="exercise-item">
+            <img src="${ex.img}" class="exercise-image" loading="lazy">
+            <div style="display:flex; justify-content:space-between; align-items:center; width:100%">
+              <span><strong>${ex.name}</strong></span>
+              <span class="badge" style="background:#444">${ex.name === 'Plancha' ? '30s' : reps + ' reps'}</span>
+            </div>
+          </div>
+        `).join('')}
+        <p style="color:var(--primary); margin-top:20px; font-weight:bold; text-align:center;">OBJETIVO: ${rounds} RONDAS</p>
+      </div>
+      <div class="card" style="text-align:center">
+        <h2>⏱️ Descanso entre Series</h2>
+        <div id="timer-display" class="timer">01:30</div>
+        <button class="btn-timer" onclick="startTimer()">Iniciar 90s</button>
+      </div>`;
+  } else if (todayType === "aerobico") {
+    const routine = cardioRoutines[Math.floor(Math.random() * cardioRoutines.length)];
+    area.innerHTML = `
+      <div class="card">
+        <h2>🏃 Aeróbico (40 min)</h2>
+        <div class="routine-box">
+          <h3>${routine.title}</h3>
+          <p style="font-size:15px; line-height:1.4">${routine.desc}</p>
+          <span class="pulsaciones">⌚ Apple Watch: ${routine.target}</span>
+        </div>
+        <p style="font-size:13px; color:var(--text-dim); margin-top:15px;">Objetivo: Mejorar eficiencia mitocondrial y VO2 Máx.</p>
+      </div>`;
+  } else if (todayType === "montaña") {
+    area.innerHTML = `
+      <div class="card">
+        <h2>⛰️ Fin de Semana</h2>
+        <p>Toca montaña. Camina a ritmo variado. Busca mantener la <b>Zona 2</b> para longevidad. Disfruta del aire libre.</p>
+      </div>`;
+  } else {
+    area.innerHTML = `<div class="card"><h2>🧘 Recuperación</h2><p>Día de descanso activo. Camina suave o haz estiramientos profundos.</p></div>`;
+  }
+  renderHistory();
 }
 
-/* TEMPORIZADOR */
+/* FUNCIONES */
 let timerInterval;
 function startTimer() {
   clearInterval(timerInterval);
-  let time = config.restTime;
+  let time = 90;
   const display = document.getElementById('timer-display');
-  
   timerInterval = setInterval(() => {
-    let mins = Math.floor(time / 60);
-    let secs = time % 60;
-    display.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    if (--time < 0) {
-      clearInterval(timerInterval);
-      display.innerText = "¡A entrenar!";
-      window.navigator.vibrate?.(200);
+    let m = Math.floor(time / 60); let s = time % 60;
+    display.innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+    if (--time < 0) { 
+        clearInterval(timerInterval); 
+        display.innerText = "¡A POR ELLO!";
+        if(window.navigator.vibrate) window.navigator.vibrate([200, 100, 200]);
     }
   }, 1000);
 }
 
-/* GUARDAR Y PROGRESAR */
 function completeWorkout() {
   const rpe = document.getElementById('rpe-select').value;
-  if(!rpe) { alert("Selecciona RPE"); return; }
-
-  // Lógica de progresión para +40 (más conservadora)
-  if (rpe <= 7) {
-    stats.reps += 1;
-    if (stats.reps > 15) { stats.reps = 10; stats.rounds += 1; }
-  } else if (rpe >= 9) {
-    stats.reps = Math.max(8, stats.reps - 1);
+  if(!rpe) return alert("Selecciona RPE");
+  
+  if(todayType.includes("fuerza")) {
+    if(parseInt(rpe) <= 6) { 
+        reps++; 
+        if(reps > 15) { reps = 10; rounds++; if(rounds > 5) { rounds = 3; level++; } } 
+    } else if(parseInt(rpe) >= 8) { 
+        reps = Math.max(8, reps - 1); 
+    }
+    localStorage.setItem("f_level", level); localStorage.setItem("f_reps", reps); localStorage.setItem("f_rounds", rounds);
   }
 
-  const entry = {
-    date: new Date().toLocaleDateString(),
-    rpe: rpe,
-    reps: stats.reps
-  };
+  let history = JSON.parse(localStorage.getItem('f_history') || "[]");
+  history.unshift({ 
+    date: new Date().toLocaleDateString('es-ES', {weekday: 'short', day: 'numeric'}), 
+    type: todayType, 
+    rpe: rpe 
+  });
+  localStorage.setItem('f_history', JSON.stringify(history.slice(0,7)));
   
-  stats.history.unshift(entry);
-  if(stats.history.length > 5) stats.history.pop();
+  // Limpiar checkboxes
+  document.getElementById('nut-prot').checked = false;
+  document.getElementById('nut-water').checked = false;
+  document.getElementById('nut-omega').checked = false;
 
-  localStorage.setItem('workout_stats', JSON.stringify(stats));
-  document.getElementById('msg').innerText = "¡Datos guardados! Sigue así.";
-  renderRoutine();
-  renderHistory();
+  document.getElementById('msg').innerText = "✅ ¡Datos Guardados!";
+  setTimeout(() => { document.getElementById('msg').innerText = ""; init(); }, 1500);
 }
 
 function renderHistory() {
-  const log = document.getElementById('history-log');
-  log.innerHTML = stats.history.map(h => `
-    <div class="history-item">📅 ${h.date} - RPE: ${h.rpe} - Reps: ${h.reps}</div>
+  const log = JSON.parse(localStorage.getItem('f_history') || "[]");
+  document.getElementById('history-log').innerHTML = log.map(h => `
+    <div class="history-item">
+        <strong>${h.date}</strong> - ${h.type.toUpperCase()} - RPE: ${h.rpe}
+    </div>
   `).join('');
 }
 
-// Iniciar App
-renderRoutine();
-renderHistory();
+init();
 </script>
-
 </body>
 </html>
-

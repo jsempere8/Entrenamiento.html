@@ -1,2 +1,2 @@
-# Entrenamiento.html
+# Entrenamiento 
 App entrenamiento

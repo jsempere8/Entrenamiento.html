@@ -79,11 +79,11 @@ select {
   font-size: 16px;
 }
 .routine-box { background: #3a3a3c; padding: 18px; border-radius: 12px; margin-top: 10px; border-left: 4px solid var(--primary); }
+.next-day-box { background: rgba(255, 255, 255, 0.05); border: 1px dashed var(--text-dim); padding: 15px; border-radius: 12px; margin-top: 10px; }
 .pulsaciones { color: var(--danger); font-weight: bold; font-size: 14px; display: block; margin-top: 8px; }
 .checklist label { display: block; font-size: 14px; margin-bottom: 10px; color: var(--text); }
 input[type="checkbox"] { transform: scale(1.3); margin-right: 10px; vertical-align: middle; }
 
-/* Estilos de la Guía Nutricional */
 #nutrition-guide { display: none; margin-top: 15px; padding: 15px; background: #1c1c1e; border-radius: 12px; border: 1px solid var(--primary); }
 .food-group { margin-bottom: 12px; }
 .food-group h4 { margin: 0; color: var(--gold); font-size: 14px; text-transform: uppercase; }
@@ -100,15 +100,18 @@ input[type="checkbox"] { transform: scale(1.3); margin-right: 10px; vertical-ali
 <div id="content-area"></div>
 
 <div class="card">
+  <h2>📅 Mañana te toca...</h2>
+  <div id="next-day-area" class="next-day-box"></div>
+</div>
+
+<div class="card">
   <h2>📊 Registro & Salud</h2>
-  
   <div class="checklist" style="margin-bottom: 15px;">
     <p style="font-size: 13px; color: var(--accent); font-weight: bold;">LONGEVIDAD:</p>
     <label><input type="checkbox" id="nut-prot"> Proteína (+1.6g/kg)</label>
     <label><input type="checkbox" id="nut-water"> Hidratación (2.5L Agua)</label>
     <label><input type="checkbox" id="nut-omega"> Omega 3 / Grasas Saludables</label>
   </div>
-
   <select id="rpe-select">
     <option value="">¿Cómo fue el esfuerzo (RPE)?</option>
     <option value="5">5 - Muy suave</option>
@@ -117,26 +120,13 @@ input[type="checkbox"] { transform: scale(1.3); margin-right: 10px; vertical-ali
     <option value="8">8 - Difícil (Mantener)</option>
     <option value="9">9 - Límite (Bajar dificultad)</option>
   </select>
-  
   <button class="btn-save" onclick="completeWorkout()">Guardar Sesión</button>
-  
-  <button class="btn-guide" onclick="toggleGuide()">💡 Ver Guía de Alimentos</button>
-  
+  <button class="btn-guide" onclick="toggleGuide()">💡 Guía de Alimentos</button>
   <div id="nutrition-guide">
-    <div class="food-group">
-      <h4>💪 Proteínas (Construcción)</h4>
-      <p>Huevos, Pollo, Pavo, Pescado Blanco, Yogur Griego (sin azúcar), Queso Batido 0%, Legumbres.</p>
-    </div>
-    <div class="food-group">
-      <h4>🥑 Grasas (Hormonas/Longevidad)</h4>
-      <p>Aceite de Oliva, Aguacate, Salmón, Sardinas, Nueces, Almendras, Semillas de Chía.</p>
-    </div>
-    <div class="food-group">
-      <h4>🍚 Carbohidratos (Energía)</h4>
-      <p>Avena, Arroz Integral, Patata Cocida, Quinoa, Fruta (Plátano antes de entrenar).</p>
-    </div>
+    <div class="food-group"><h4>💪 Proteínas</h4><p>Huevos, Pollo, Pescado, Yogur Griego, Queso Batido 0%.</p></div>
+    <div class="food-group"><h4>🥑 Grasas</h4><p>AOVE, Aguacate, Salmón, Nueces, Semillas.</p></div>
+    <div class="food-group"><h4>🍚 Carbohidratos</h4><p>Avena, Arroz Integral, Patata, Fruta.</p></div>
   </div>
-  
   <p id="msg" style="text-align: center; font-size: 14px; margin-top: 12px; font-weight: bold;"></p>
 </div>
 
@@ -154,10 +144,15 @@ const exercises = [
   { name: "Plancha", img: "https://i.ibb.co/b3gYmP4/plank.gif" }
 ];
 
+const sessions = { 
+  lunes: "fuerza", martes: "aerobico", miércoles: "fuerza", jueves: "aerobico", 
+  viernes: "fuerza_ligera", sábado: "montaña", domingo: "montaña" 
+};
+
 const cardioRoutines = [
-  { title: "🔥 HIIT 40' (Zona 2-4)", desc: "10' Calentamiento + 10 ciclos de (1' Zona 4 / 1' Zona 1-2) + 10' Enfriamiento.", target: "Esfuerzo: 150-160 bpm" },
-  { title: "🏃 Base Aeróbica (Zona 2)", desc: "30' constantes en ZONA 2 (verde claro). Ritmo de charla cómodo.", target: "Constante: 125-135 bpm" },
-  { title: "⛰️ Pendiente/Escaleras (Zona 2-3)", desc: "40' Caminata rápida con inclinación. Mantente entre Zona 2 y Zona 3.", target: "Objetivo: 130-140 bpm" }
+  { title: "🔥 HIIT 40' (Zona 2-4)", desc: "Intervalos de alta intensidad." },
+  { title: "🏃 Base Aeróbica (Zona 2)", desc: "Ritmo constante y suave." },
+  { title: "⛰️ Pendiente/Escaleras (Zona 2-3)", desc: "Caminata rápida con desnivel." }
 ];
 
 /* ESTADO */
@@ -166,15 +161,17 @@ let reps = parseInt(localStorage.getItem("f_reps") || "10");
 let rounds = parseInt(localStorage.getItem("f_rounds") || "3");
 
 const days = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
-const today = new Date();
-const dayName = days[today.getDay()];
-const sessions = { lunes: "fuerza", martes: "aerobico", miércoles: "fuerza", jueves: "aerobico", viernes: "fuerza_ligera", sábado: "montaña", domingo: "montaña" };
+const todayDate = new Date();
+const dayName = days[todayDate.getDay()];
+const nextDayName = days[(todayDate.getDay() + 1) % 7];
 const todayType = sessions[dayName] || "descanso";
+const nextDayType = sessions[nextDayName] || "descanso";
 
 function init() {
   document.getElementById('date-label').innerText = dayName;
   const area = document.getElementById('content-area');
   
+  // Renderizar hoy
   if (todayType.includes("fuerza")) {
     area.innerHTML = `
       <div class="card">
@@ -190,19 +187,25 @@ function init() {
         `).join('')}
         <p style="color:var(--primary); margin-top:20px; font-weight:bold; text-align:center;">OBJETIVO: ${rounds} RONDAS</p>
       </div>
-      <div class="card" style="text-align:center">
-        <h2>⏱️ Descanso</h2>
-        <div id="timer-display" class="timer">01:30</div>
-        <button class="btn-timer" onclick="startTimer()">Iniciar Descanso</button>
-      </div>`;
+      <div class="card" style="text-align:center"><h2>⏱️ Descanso</h2><div id="timer-display" class="timer">01:30</div><button class="btn-timer" onclick="startTimer()">Iniciar</button></div>`;
   } else if (todayType === "aerobico") {
-    const routine = cardioRoutines[Math.floor(Math.random() * cardioRoutines.length)];
-    area.innerHTML = `<div class="card"><h2>🏃 Aeróbico Hoy</h2><div class="routine-box"><h3>${routine.title}</h3><p>${routine.desc}</p><span class="pulsaciones">⌚ Apple Watch: ${routine.target}</span></div></div>`;
+    area.innerHTML = `<div class="card"><h2>🏃 Aeróbico Hoy</h2><div class="routine-box"><h3>Actividad de 40 min</h3><p>Consulta las zonas en tu Apple Watch.</p></div></div>`;
   } else if (todayType === "montaña") {
-    area.innerHTML = `<div class="card"><h2>⛰️ Fin de Semana</h2><p>Día de montaña. Mantén el corazón en <b>Zona 2</b> para longevidad.</p></div>`;
+    area.innerHTML = `<div class="card"><h2>⛰️ Fin de Semana</h2><p>Día de montaña y aire libre.</p></div>`;
   } else {
-    area.innerHTML = `<div class="card"><h2>🧘 Descanso</h2><p>Recuperación activa. Paseo o estiramientos suaves.</p></div>`;
+    area.innerHTML = `<div class="card"><h2>🧘 Descanso</h2><p>Recuperación activa.</p></div>`;
   }
+
+  // Renderizar mañana
+  const nextArea = document.getElementById('next-day-area');
+  let nextInfo = "";
+  if(nextDayType.includes("fuerza")) nextInfo = `💪 <b>Sesión de Fuerza:</b> Toca seguir progresando en nivel ${level}.`;
+  else if(nextDayType === "aerobico") nextInfo = `🏃 <b>Cardio 40 min:</b> Mañana toca foco en el corazón (Zona 2).`;
+  else if(nextDayType === "montaña") nextInfo = `⛰️ <b>A la montaña:</b> ¡Prepárate para el aire libre!`;
+  else nextInfo = `🧘 <b>Descanso:</b> Mañana toca recuperar el cuerpo.`;
+  
+  nextArea.innerHTML = `<p style="margin:0; font-size:14px;">${nextInfo}</p>`;
+  
   renderHistory();
 }
 
@@ -234,13 +237,7 @@ function completeWorkout() {
   history.unshift({ date: new Date().toLocaleDateString('es-ES', {day: 'numeric', month: 'short'}), type: todayType, rpe: rpe });
   localStorage.setItem('f_history', JSON.stringify(history.slice(0,7)));
   
-  // Limpiar campos
-  document.getElementById('nut-prot').checked = false;
-  document.getElementById('nut-water').checked = false;
-  document.getElementById('nut-omega').checked = false;
-  document.getElementById('rpe-select').value = "";
-
-  document.getElementById('msg').innerText = "✅ ¡Datos Guardados!";
+  document.getElementById('msg').innerText = "✅ ¡Guardado!";
   setTimeout(() => { document.getElementById('msg').innerText = ""; init(); }, 1500);
 }
 

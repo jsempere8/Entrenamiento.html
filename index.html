@@ -13,6 +13,7 @@
   --text-dim: #a1a1a6;
   --accent: #34c759;
   --danger: #ff3b30;
+  --gold: #ffcc00;
 }
 body {
   font-family: -apple-system, system-ui, sans-serif;
@@ -52,7 +53,6 @@ h1, h2, h3 { font-weight: 700; margin-bottom: 8px; }
   text-align: center;
   color: var(--primary);
   margin: 10px 0;
-  font-variant-numeric: tabular-nums;
 }
 button {
   width: 100%;
@@ -65,9 +65,9 @@ button {
   font-weight: bold;
   cursor: pointer;
 }
-button:active { transform: scale(0.98); opacity: 0.9; }
 .btn-timer { background: transparent; border: 2px solid var(--primary); color: var(--primary); margin-top: 10px; }
 .btn-save { background: var(--accent); margin-top: 15px; }
+.btn-guide { background: #444; margin-top: 10px; font-size: 14px; padding: 10px; }
 .history-item { font-size: 13px; color: var(--text-dim); margin-bottom: 6px; border-bottom: 1px solid #333; padding-bottom: 4px; }
 select {
   width: 100%;
@@ -77,12 +77,17 @@ select {
   color: white;
   border: none;
   font-size: 16px;
-  margin-top: 10px;
 }
 .routine-box { background: #3a3a3c; padding: 18px; border-radius: 12px; margin-top: 10px; border-left: 4px solid var(--primary); }
 .pulsaciones { color: var(--danger); font-weight: bold; font-size: 14px; display: block; margin-top: 8px; }
 .checklist label { display: block; font-size: 14px; margin-bottom: 10px; color: var(--text); }
 input[type="checkbox"] { transform: scale(1.3); margin-right: 10px; vertical-align: middle; }
+
+/* Estilos de la Guía Nutricional */
+#nutrition-guide { display: none; margin-top: 15px; padding: 15px; background: #1c1c1e; border-radius: 12px; border: 1px solid var(--primary); }
+.food-group { margin-bottom: 12px; }
+.food-group h4 { margin: 0; color: var(--gold); font-size: 14px; text-transform: uppercase; }
+.food-group p { margin: 4px 0; font-size: 13px; color: var(--text-dim); }
 </style>
 </head>
 <body>
@@ -95,9 +100,9 @@ input[type="checkbox"] { transform: scale(1.3); margin-right: 10px; vertical-ali
 <div id="content-area"></div>
 
 <div class="card">
-  <h2>📊 Registro & Nutrición</h2>
+  <h2>📊 Registro & Salud</h2>
   
-  <div class="checklist" style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #444;">
+  <div class="checklist" style="margin-bottom: 15px;">
     <p style="font-size: 13px; color: var(--accent); font-weight: bold;">LONGEVIDAD:</p>
     <label><input type="checkbox" id="nut-prot"> Proteína (+1.6g/kg)</label>
     <label><input type="checkbox" id="nut-water"> Hidratación (2.5L Agua)</label>
@@ -106,13 +111,32 @@ input[type="checkbox"] { transform: scale(1.3); margin-right: 10px; vertical-ali
 
   <select id="rpe-select">
     <option value="">¿Cómo fue el esfuerzo (RPE)?</option>
-    <option value="5">5 - Muy suave (Recuperación)</option>
-    <option value="6">6 - Cómodo (Sube dificultad mañana)</option>
-    <option value="7">7 - Moderado (Ritmo ideal)</option>
-    <option value="8">8 - Difícil (Cerca del límite)</option>
-    <option value="9">9 - Extremo (Baja carga mañana)</option>
+    <option value="5">5 - Muy suave</option>
+    <option value="6">6 - Cómodo (Sube dificultad)</option>
+    <option value="7">7 - Moderado (Ideal)</option>
+    <option value="8">8 - Difícil (Mantener)</option>
+    <option value="9">9 - Límite (Bajar dificultad)</option>
   </select>
+  
   <button class="btn-save" onclick="completeWorkout()">Guardar Sesión</button>
+  
+  <button class="btn-guide" onclick="toggleGuide()">💡 Ver Guía de Alimentos</button>
+  
+  <div id="nutrition-guide">
+    <div class="food-group">
+      <h4>💪 Proteínas (Construcción)</h4>
+      <p>Huevos, Pollo, Pavo, Pescado Blanco, Yogur Griego (sin azúcar), Queso Batido 0%, Legumbres.</p>
+    </div>
+    <div class="food-group">
+      <h4>🥑 Grasas (Hormonas/Longevidad)</h4>
+      <p>Aceite de Oliva, Aguacate, Salmón, Sardinas, Nueces, Almendras, Semillas de Chía.</p>
+    </div>
+    <div class="food-group">
+      <h4>🍚 Carbohidratos (Energía)</h4>
+      <p>Avena, Arroz Integral, Patata Cocida, Quinoa, Fruta (Plátano antes de entrenar).</p>
+    </div>
+  </div>
+  
   <p id="msg" style="text-align: center; font-size: 14px; margin-top: 12px; font-weight: bold;"></p>
 </div>
 
@@ -122,7 +146,7 @@ input[type="checkbox"] { transform: scale(1.3); margin-right: 10px; vertical-ali
 </div>
 
 <script>
-/* CONFIGURACIÓN */
+/* DATOS */
 const exercises = [
   { name: "Sentadillas", img: "https://i.ibb.co/L5hY5M2/squat.gif" },
   { name: "Flexiones", img: "https://i.ibb.co/3Wqj2Bq/pushup.gif" },
@@ -131,24 +155,12 @@ const exercises = [
 ];
 
 const cardioRoutines = [
-  { 
-    title: "🔥 HIIT 40' (Zonas 2-4)", 
-    desc: "10' Calentamiento + 10 ciclos de (1' en <b>Zona 4 del Watch</b> / 1' Caminar en <b>Zona 1-2</b>) + 10' Enfriamiento.",
-    target: "Esfuerzo: 150-160 bpm / Recuperación: <130 bpm"
-  },
-  { 
-    title: "🏃 Base Aeróbica (Zona 2)", 
-    desc: "5' Calentamiento + 30' constantes en <b>ZONA 2</b> (Color verde claro en el reloj). Mantén ritmo de charla. Si subes a Zona 3, frena.",
-    target: "Ritmo constante: 125-135 bpm"
-  },
-  { 
-    title: "⛰️ Pendiente/Escaleras (Zona 2-3)", 
-    desc: "40' Caminata rápida con inclinación. Mantente entre el límite de la <b>Zona 2 y el inicio de la Zona 3</b>.",
-    target: "Pulsaciones objetivo: 130-140 bpm"
-  }
+  { title: "🔥 HIIT 40' (Zona 2-4)", desc: "10' Calentamiento + 10 ciclos de (1' Zona 4 / 1' Zona 1-2) + 10' Enfriamiento.", target: "Esfuerzo: 150-160 bpm" },
+  { title: "🏃 Base Aeróbica (Zona 2)", desc: "30' constantes en ZONA 2 (verde claro). Ritmo de charla cómodo.", target: "Constante: 125-135 bpm" },
+  { title: "⛰️ Pendiente/Escaleras (Zona 2-3)", desc: "40' Caminata rápida con inclinación. Mantente entre Zona 2 y Zona 3.", target: "Objetivo: 130-140 bpm" }
 ];
 
-/* VARIABLES DE ESTADO */
+/* ESTADO */
 let level = parseInt(localStorage.getItem("f_level") || "1");
 let reps = parseInt(localStorage.getItem("f_reps") || "10");
 let rounds = parseInt(localStorage.getItem("f_rounds") || "3");
@@ -156,23 +168,15 @@ let rounds = parseInt(localStorage.getItem("f_rounds") || "3");
 const days = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 const today = new Date();
 const dayName = days[today.getDay()];
-const sessions = { 
-  lunes: "fuerza", martes: "aerobico", miércoles: "fuerza", 
-  jueves: "aerobico", viernes: "fuerza_ligera", sábado: "montaña", domingo: "montaña" 
-};
+const sessions = { lunes: "fuerza", martes: "aerobico", miércoles: "fuerza", jueves: "aerobico", viernes: "fuerza_ligera", sábado: "montaña", domingo: "montaña" };
 const todayType = sessions[dayName] || "descanso";
 
-/* RENDERIZADO PRINCIPAL */
 function init() {
   document.getElementById('date-label').innerText = dayName;
   const area = document.getElementById('content-area');
   
   if (todayType.includes("fuerza")) {
     area.innerHTML = `
-      <div class="card">
-        <h2>🔥 Movilidad Preventiva</h2>
-        <p style="font-size:14px; color:var(--text-dim)">Protege hombros y espalda baja. Haz 1 ronda de movilidad articular antes de empezar.</p>
-      </div>
       <div class="card">
         <h2>🚀 Fuerza: Nivel ${level}</h2>
         ${exercises.map(ex => `
@@ -187,36 +191,26 @@ function init() {
         <p style="color:var(--primary); margin-top:20px; font-weight:bold; text-align:center;">OBJETIVO: ${rounds} RONDAS</p>
       </div>
       <div class="card" style="text-align:center">
-        <h2>⏱️ Descanso entre Series</h2>
+        <h2>⏱️ Descanso</h2>
         <div id="timer-display" class="timer">01:30</div>
-        <button class="btn-timer" onclick="startTimer()">Iniciar 90s</button>
+        <button class="btn-timer" onclick="startTimer()">Iniciar Descanso</button>
       </div>`;
   } else if (todayType === "aerobico") {
     const routine = cardioRoutines[Math.floor(Math.random() * cardioRoutines.length)];
-    area.innerHTML = `
-      <div class="card">
-        <h2>🏃 Aeróbico (40 min)</h2>
-        <div class="routine-box">
-          <h3>${routine.title}</h3>
-          <p style="font-size:15px; line-height:1.4">${routine.desc}</p>
-          <span class="pulsaciones">⌚ Apple Watch: ${routine.target}</span>
-        </div>
-        <p style="font-size:13px; color:var(--text-dim); margin-top:15px;">Objetivo: Mejorar eficiencia mitocondrial y VO2 Máx.</p>
-      </div>`;
+    area.innerHTML = `<div class="card"><h2>🏃 Aeróbico Hoy</h2><div class="routine-box"><h3>${routine.title}</h3><p>${routine.desc}</p><span class="pulsaciones">⌚ Apple Watch: ${routine.target}</span></div></div>`;
   } else if (todayType === "montaña") {
-    area.innerHTML = `
-      <div class="card">
-        <h2>⛰️ Fin de Semana</h2>
-        <p>Toca montaña. Camina a ritmo variado. Busca mantener la <b>Zona 2</b> para longevidad. Disfruta del aire libre.</p>
-      </div>`;
+    area.innerHTML = `<div class="card"><h2>⛰️ Fin de Semana</h2><p>Día de montaña. Mantén el corazón en <b>Zona 2</b> para longevidad.</p></div>`;
   } else {
-    area.innerHTML = `<div class="card"><h2>🧘 Recuperación</h2><p>Día de descanso activo. Camina suave o haz estiramientos profundos.</p></div>`;
+    area.innerHTML = `<div class="card"><h2>🧘 Descanso</h2><p>Recuperación activa. Paseo o estiramientos suaves.</p></div>`;
   }
   renderHistory();
 }
 
-/* FUNCIONES */
-let timerInterval;
+function toggleGuide() {
+  const guide = document.getElementById('nutrition-guide');
+  guide.style.display = (guide.style.display === 'block') ? 'none' : 'block';
+}
+
 function startTimer() {
   clearInterval(timerInterval);
   let time = 90;
@@ -224,40 +218,27 @@ function startTimer() {
   timerInterval = setInterval(() => {
     let m = Math.floor(time / 60); let s = time % 60;
     display.innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-    if (--time < 0) { 
-        clearInterval(timerInterval); 
-        display.innerText = "¡A POR ELLO!";
-        if(window.navigator.vibrate) window.navigator.vibrate([200, 100, 200]);
-    }
+    if (--time < 0) { clearInterval(timerInterval); display.innerText = "¡LISTO!"; }
   }, 1000);
 }
 
 function completeWorkout() {
   const rpe = document.getElementById('rpe-select').value;
   if(!rpe) return alert("Selecciona RPE");
-  
   if(todayType.includes("fuerza")) {
-    if(parseInt(rpe) <= 6) { 
-        reps++; 
-        if(reps > 15) { reps = 10; rounds++; if(rounds > 5) { rounds = 3; level++; } } 
-    } else if(parseInt(rpe) >= 8) { 
-        reps = Math.max(8, reps - 1); 
-    }
+    if(parseInt(rpe) <= 6) { reps++; if(reps > 15) { reps = 10; rounds++; if(rounds > 5) { rounds = 3; level++; } } }
+    else if(parseInt(rpe) >= 8) { reps = Math.max(8, reps - 1); }
     localStorage.setItem("f_level", level); localStorage.setItem("f_reps", reps); localStorage.setItem("f_rounds", rounds);
   }
-
   let history = JSON.parse(localStorage.getItem('f_history') || "[]");
-  history.unshift({ 
-    date: new Date().toLocaleDateString('es-ES', {weekday: 'short', day: 'numeric'}), 
-    type: todayType, 
-    rpe: rpe 
-  });
+  history.unshift({ date: new Date().toLocaleDateString('es-ES', {day: 'numeric', month: 'short'}), type: todayType, rpe: rpe });
   localStorage.setItem('f_history', JSON.stringify(history.slice(0,7)));
   
-  // Limpiar checkboxes
+  // Limpiar campos
   document.getElementById('nut-prot').checked = false;
   document.getElementById('nut-water').checked = false;
   document.getElementById('nut-omega').checked = false;
+  document.getElementById('rpe-select').value = "";
 
   document.getElementById('msg').innerText = "✅ ¡Datos Guardados!";
   setTimeout(() => { document.getElementById('msg').innerText = ""; init(); }, 1500);
@@ -265,11 +246,7 @@ function completeWorkout() {
 
 function renderHistory() {
   const log = JSON.parse(localStorage.getItem('f_history') || "[]");
-  document.getElementById('history-log').innerHTML = log.map(h => `
-    <div class="history-item">
-        <strong>${h.date}</strong> - ${h.type.toUpperCase()} - RPE: ${h.rpe}
-    </div>
-  `).join('');
+  document.getElementById('history-log').innerHTML = log.map(h => `<div class="history-item"><strong>${h.date}</strong> - ${h.type.toUpperCase()} - RPE: ${h.rpe}</div>`).join('');
 }
 
 init();

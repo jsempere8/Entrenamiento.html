@@ -1,297 +1,190 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Fuerza & Salud +40</title>
-<style>
-:root {
-  --primary: #007aff;
-  --bg: #1c1c1e;
-  --card: #2c2c2e;
-  --text: #ffffff;
-  --text-dim: #a1a1a6;
-  --accent: #34c759;
-  --danger: #ff3b30;
-  --gold: #ffcc00;
-}
-body {
-  font-family: -apple-system, system-ui, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  margin: 0;
-  padding: 20px;
-  line-height: 1.4;
-}
-h1, h2, h3 { font-weight: 700; margin-bottom: 8px; }
-.badge { background: var(--primary); padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
-.card {
-  background: var(--card);
-  padding: 20px;
-  border-radius: 16px;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-}
-.exercise-item {
-  display: flex;
-  flex-direction: column;
-  padding: 15px 0;
-  border-bottom: 1px solid #3a3a3c;
-}
-.exercise-image {
-  width: 100%;
-  max-width: 280px;
-  height: auto;
-  border-radius: 12px;
-  margin-bottom: 12px;
-  align-self: center;
-  border: 1px solid #444;
-}
-.timer {
-  font-size: 2.8rem;
-  font-weight: bold;
-  text-align: center;
-  color: var(--primary);
-  margin: 10px 0;
-}
-button {
-  width: 100%;
-  background: var(--primary);
-  color: white;
-  border: none;
-  padding: 16px;
-  border-radius: 14px;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-}
-.btn-timer { background: transparent; border: 2px solid var(--primary); color: var(--primary); margin-top: 10px; }
-.btn-save { background: var(--accent); margin-top: 15px; }
-.btn-guide { background: #444; margin-top: 10px; font-size: 14px; padding: 10px; }
-.history-item { 
-  font-size: 13px; 
-  color: var(--text-dim); 
-  margin-bottom: 8px; 
-  border-bottom: 1px solid #333; 
-  padding-bottom: 8px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.history-actions {
-  display: flex;
-  gap: 5px;
-}
-.btn-action-small {
-  padding: 6px 10px;
-  border-radius: 8px;
-  font-size: 11px;
-  width: auto;
-  font-weight: bold;
-}
-.btn-edit { background: #444; color: white; }
-.btn-delete { background: var(--danger); color: white; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BioHacker +40 Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, onSnapshot, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-select {
-  width: 100%;
-  padding: 12px;
-  border-radius: 10px;
-  background: #3a3a3c;
-  color: white;
-  border: none;
-  font-size: 16px;
-}
-.routine-box { background: #3a3a3c; padding: 18px; border-radius: 12px; margin-top: 10px; border-left: 4px solid var(--primary); }
-.next-day-box { background: rgba(255, 255, 255, 0.05); border: 1px dashed var(--text-dim); padding: 15px; border-radius: 12px; margin-top: 10px; }
-.pulsaciones { color: var(--danger); font-weight: bold; font-size: 14px; display: block; margin-top: 8px; }
-.checklist label { display: block; font-size: 14px; margin-bottom: 10px; color: var(--text); }
-input[type="checkbox"] { transform: scale(1.3); margin-right: 10px; vertical-align: middle; }
+        const firebaseConfig = {
+            apiKey: "AIzaSyD1xdMdcbHXgGAL008bdmq22SNgLVcC9jM",
+            authDomain: "appweb-entrenamiento.firebaseapp.com",
+            projectId: "appweb-entrenamiento",
+            storageBucket: "appweb-entrenamiento.firebasestorage.app",
+            messagingSenderId: "199318318696",
+            appId: "1:199318318696:web:04c592f117296e375215dd"
+        };
 
-#nutrition-guide { display: none; margin-top: 15px; padding: 15px; background: #1c1c1e; border-radius: 12px; border: 1px solid var(--primary); }
-.food-group { margin-bottom: 12px; }
-.food-group h4 { margin: 0; color: var(--gold); font-size: 14px; text-transform: uppercase; }
-.food-group p { margin: 4px 0; font-size: 13px; color: var(--text-dim); }
-</style>
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // --- ESTILOS ---
+        const styles = `
+            :root { --primary: #007aff; --bg: #000; --card: #1c1c1e; --text: #fff; --accent: #32d74b; --gold: #ffcc00; }
+            body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; padding-bottom: 100px; }
+            .card { background: var(--card); padding: 20px; border-radius: 20px; margin-bottom: 15px; border: 1px solid #2c2c2e; }
+            .stat-value { font-size: 26px; font-weight: 800; color: var(--primary); }
+            .stat-label { font-size: 11px; text-transform: uppercase; color: #8e8e93; }
+            .grid-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+            .btn-main { width: 100%; background: var(--primary); color: #fff; border: none; padding: 18px; border-radius: 16px; font-size: 17px; font-weight: 600; margin-top: 15px; }
+            .exercise-gif { width: 100%; border-radius: 15px; margin: 15px 0; }
+            .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(28,28,30,0.8); backdrop-filter: blur(20px); display: flex; padding: 15px; border-top: 0.5px solid #3a3a3c; }
+            .tab-btn { flex: 1; background: none; border: none; color: #8e8e93; font-size: 11px; }
+            .tab-btn.active { color: var(--primary); }
+            .hidden { display: none; }
+            select { width: 100%; padding: 15px; border-radius: 12px; background: #2c2c2e; color: #fff; border: none; font-size: 16px; }
+            /* Animación Logro */
+            #achievement-popup { position: fixed; top: 20%; left: 10%; right: 10%; background: var(--gold); color: #000; padding: 30px; border-radius: 25px; text-align: center; z-index: 1000; display: none; box-shadow: 0 10px 40px rgba(255,204,0,0.4); animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+            @keyframes pop { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        `;
+        const styleSheet = document.createElement("style"); styleSheet.innerText = styles; document.head.appendChild(styleSheet);
+
+        // --- LÓGICA ---
+        let level = 1, reps = 10, chartInstance = null;
+        const days = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+        const todayType = { lunes:"FUERZA", martes:"ZONA 2", miércoles:"FUERZA", jueves:"ZONA 2", viernes:"FUERZA LITE", sábado:"MONTAÑA", domingo:"OFF" }[days[new Date().getDay()]];
+
+        onSnapshot(doc(db, "userStats", "global"), (doc) => {
+            if(doc.exists()) {
+                const d = doc.data(); level = d.level; reps = d.reps;
+                document.getElementById('lvl-val').innerText = level;
+                document.getElementById('rep-val').innerText = reps;
+            }
+        });
+
+        onSnapshot(query(collection(db, "workouts"), orderBy("date", "desc"), limit(10)), (snapshot) => {
+            const logs = snapshot.docs.map(d => d.data());
+            updateChart(logs);
+            renderHistory(logs);
+        });
+
+        window.saveSession = async () => {
+            const rpe = document.getElementById('rpe-input').value;
+            if(!rpe) return;
+            const btn = event.target; btn.innerText = "Guardando..."; btn.disabled = true;
+
+            await addDoc(collection(db, "workouts"), {
+                date: new Date().toISOString(),
+                rpe: parseInt(rpe),
+                reps: reps,
+                type: todayType
+            });
+
+            // Verificar Hitos de Motivación
+            const allDocs = await getDocs(collection(db, "workouts"));
+            const totalCount = allDocs.size;
+            checkMilestones(totalCount);
+
+            if(todayType.includes("FUERZA") && rpe <= 6) {
+                reps++; if(reps > 15) { reps = 10; level++; }
+                await setDoc(doc(db, "userStats", "global"), { level, reps });
+            }
+            btn.innerText = "¡SESIÓN LOGRADA!";
+            setTimeout(() => { btn.innerText = "GUARDAR ENTRENAMIENTO"; btn.disabled = false; }, 2000);
+        };
+
+        function checkMilestones(count) {
+            const milestones = [1, 5, 10, 25, 50, 100, 250, 500];
+            if(milestones.includes(count)) {
+                const popup = document.getElementById('achievement-popup');
+                const msgs = {
+                    1: "¡El primer paso es el más difícil! Bienvenido al club.",
+                    5: "Ya es una rutina. Tu cuerpo empieza a notar el cambio.",
+                    10: "¡10 Sesiones! Has demostrado compromiso real.",
+                    25: "Nivel Bronce. Tu metabolismo está despertando.",
+                    50: "¡MEDIO CENTENAR! Eres un ejemplo de longevidad.",
+                    100: "¡CENTURIÓN! Has reprogramado tu genética."
+                };
+                popup.innerHTML = `<h2 style="margin:0">🏆 ¡LOGRO!</h2><p style="font-weight:bold">${count} Sesiones</p><p>${msgs[count] || "¡Sigues imparable en tu camino!"}</p><button onclick="this.parentElement.style.display='none'" style="background:black; color:white; border:none; padding:10px 20px; border-radius:10px; margin-top:10px">¡Vamos!</button>`;
+                popup.style.display = 'block';
+            }
+        }
+
+        window.switchTab = (tab) => {
+            document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('page-' + tab).classList.remove('hidden');
+            event.currentTarget.classList.add('active');
+        };
+
+        function updateChart(logs) {
+            const ctx = document.getElementById('growthChart').getContext('2d');
+            const data = [...logs].reverse();
+            if(chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(l => new Date(l.date).toLocaleDateString(undefined, {day:'numeric'})),
+                    datasets: [{ label: 'RPE', data: data.map(l => l.rpe), borderColor: '#007aff', tension: 0.4, fill: true, backgroundColor: 'rgba(0,122,255,0.1)' }]
+                },
+                options: { plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false }, ticks: { color: '#8e8e93' } } } }
+            });
+        }
+
+        function renderHistory(logs) {
+            document.getElementById('history-cont').innerHTML = logs.map(l => `
+                <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:0.5px solid #2c2c2e; font-size:13px;">
+                    <span>${new Date(l.date).toLocaleDateString(undefined, {day:'numeric', month:'short'})}</span>
+                    <span style="color:var(--primary)">${l.type}</span>
+                    <span>RPE ${l.rpe}</span>
+                </div>
+            `).join('');
+        }
+    </script>
 </head>
 <body>
 
-<header>
-  <span id="date-label" class="badge">Hoy</span>
-  <h1 id="main-title">AppWeb entrenamientos</h1>
-</header>
+    <div id="achievement-popup"></div>
 
-<div id="content-area"></div>
+    <div id="page-train" class="page">
+        <header style="margin-bottom:20px;">
+            <p class="stat-label" style="color:var(--accent)">BioHacker Cloud</p>
+            <h1 style="margin:0">Entrenamiento</h1>
+        </header>
 
-<div class="card">
-  <h2>📅 Mañana te toca...</h2>
-  <div id="next-day-area" class="next-day-box"></div>
-</div>
+        <div class="grid-stats">
+            <div class="card"><span class="stat-label">Nivel Actual</span><div class="stat-value" id="lvl-val">1</div></div>
+            <div class="card"><span class="stat-label">Reps Objetivo</span><div class="stat-value" id="rep-val">10</div></div>
+        </div>
 
-<div class="card">
-  <h2>📊 Registro & Salud</h2>
-  <div class="checklist" style="margin-bottom: 15px;">
-    <p style="font-size: 13px; color: var(--accent); font-weight: bold;">LONGEVIDAD:</p>
-    <label><input type="checkbox" id="nut-prot"> Proteína (+1.6g/kg)</label>
-    <label><input type="checkbox" id="nut-water"> Hidratación (2.5L Agua)</label>
-    <label><input type="checkbox" id="nut-omega"> Omega 3 / Grasas Saludables</label>
-  </div>
-  <select id="rpe-select">
-    <option value="">¿Cómo fue el esfuerzo (RPE)?</option>
-    <option value="5">5 - Muy suave</option>
-    <option value="6">6 - Cómodo</option>
-    <option value="7">7 - Moderado</option>
-    <option value="8">8 - Difícil</option>
-    <option value="9">9 - Límite</option>
-  </select>
-  <button class="btn-save" onclick="completeWorkout()">Guardar Sesión</button>
-  <button class="btn-guide" onclick="toggleGuide()">💡 Guía de Alimentos</button>
-  <div id="nutrition-guide">
-    <div class="food-group"><h4>💪 Proteínas</h4><p>Huevos, Pollo, Pescado, Yogur Griego, Queso Batido 0%.</p></div>
-    <div class="food-group"><h4>🥑 Grasas</h4><p>AOVE, Aguacate, Salmón, Nueces, Semillas.</p></div>
-    <div class="food-group"><h4>🍚 Carbohidratos</h4><p>Avena, Arroz Integral, Patata, Fruta.</p></div>
-  </div>
-  <p id="msg" style="text-align: center; font-size: 14px; margin-top: 12px; font-weight: bold;"></p>
-</div>
+        <div class="card">
+            <h3 style="margin:0">${todayType}</h3>
+            ${todayType.includes("FUERZA") ? `<img src="https://i.ibb.co/L5hY5M2/squat.gif" class="exercise-gif">` : `<p style="color:#8e8e93; font-size:14px;">Hoy toca base aeróbica. Mantente en Zona 2 para optimizar mitocondrias.</p>`}
+        </div>
 
-<div class="card">
-  <h2>📈 Historial Semanal</h2>
-  <div id="history-log"></div>
-</div>
-
-<script>
-/* DATOS */
-const exercises = [
-  { name: "Sentadillas", img: "https://i.ibb.co/L5hY5M2/squat.gif" },
-  { name: "Flexiones", img: "https://i.ibb.co/3Wqj2Bq/pushup.gif" },
-  { name: "Zancadas", img: "https://i.ibb.co/Zc1yG0y/lunge.gif" },
-  { name: "Plancha", img: "https://i.ibb.co/b3gYmP4/plank.gif" }
-];
-
-const sessions = { 
-  lunes: "fuerza", martes: "aerobico", miércoles: "fuerza", jueves: "aerobico", 
-  viernes: "fuerza_ligera", sábado: "montaña", domingo: "montaña" 
-};
-
-/* ESTADO */
-let level = parseInt(localStorage.getItem("f_level") || "1");
-let reps = parseInt(localStorage.getItem("f_reps") || "10");
-let rounds = parseInt(localStorage.getItem("f_rounds") || "3");
-
-const days = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
-const todayDate = new Date();
-const dayName = days[todayDate.getDay()];
-const nextDayName = days[(todayDate.getDay() + 1) % 7];
-const todayType = sessions[dayName] || "descanso";
-const nextDayType = sessions[nextDayName] || "descanso";
-
-let timerInterval;
-
-function init() {
-  document.getElementById('date-label').innerText = dayName;
-  const area = document.getElementById('content-area');
-  
-  if (todayType.includes("fuerza")) {
-    area.innerHTML = `
-      <div class="card">
-        <h2>🚀 Fuerza: Nivel ${level}</h2>
-        ${exercises.map(ex => `
-          <div class="exercise-item">
-            <img src="${ex.img}" class="exercise-image" loading="lazy">
-            <div style="display:flex; justify-content:space-between; align-items:center; width:100%">
-              <span><strong>${ex.name}</strong></span>
-              <span class="badge" style="background:#444">${ex.name === 'Plancha' ? '30s' : reps + ' reps'}</span>
-            </div>
-          </div>
-        `).join('')}
-        <p style="color:var(--primary); margin-top:20px; font-weight:bold; text-align:center;">OBJETIVO: ${rounds} RONDAS</p>
-      </div>
-      <div class="card" style="text-align:center"><h2>⏱️ Descanso</h2><div id="timer-display" class="timer">01:30</div><button class="btn-timer" onclick="startTimer()">Iniciar</button></div>`;
-  } else if (todayType === "aerobico") {
-    area.innerHTML = `<div class="card"><h2>🏃 Aeróbico Hoy</h2><div class="routine-box"><h3>Actividad de 40 min</h3><p>Consulta las zonas en tu Apple Watch.</p></div></div>`;
-  } else {
-    area.innerHTML = `<div class="card"><h2>🧘 Recuperación/Montaña</h2><p>Día para disfrutar o recuperar.</p></div>`;
-  }
-
-  const nextArea = document.getElementById('next-day-area');
-  let nextInfo = nextDayType.includes("fuerza") ? `💪 Fuerza Nivel ${level}` : nextDayType === "aerobico" ? `🏃 Cardio 40 min` : `🧘 Descanso/Montaña`;
-  nextArea.innerHTML = `<p style="margin:0; font-size:14px;">Mañana: ${nextInfo}</p>`;
-  
-  renderHistory();
-}
-
-function toggleGuide() {
-  const guide = document.getElementById('nutrition-guide');
-  guide.style.display = (guide.style.display === 'block') ? 'none' : 'block';
-}
-
-function startTimer() {
-  clearInterval(timerInterval);
-  let time = 90;
-  const display = document.getElementById('timer-display');
-  timerInterval = setInterval(() => {
-    let m = Math.floor(time / 60); let s = time % 60;
-    display.innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-    if (--time < 0) { clearInterval(timerInterval); display.innerText = "¡LISTO!"; }
-  }, 1000);
-}
-
-function completeWorkout() {
-  const rpe = document.getElementById('rpe-select').value;
-  if(!rpe) return alert("Selecciona RPE");
-  
-  const record = { 
-    id: Date.now(),
-    date: new Date().toLocaleDateString('es-ES', {day: 'numeric', month: 'short'}), 
-    type: todayType, 
-    rpe: rpe 
-  };
-
-  let history = JSON.parse(localStorage.getItem('f_history') || "[]");
-  history.unshift(record);
-  localStorage.setItem('f_history', JSON.stringify(history.slice(0,7)));
-  
-  document.getElementById('msg').innerText = "✅ ¡Guardado!";
-  setTimeout(() => { document.getElementById('msg').innerText = ""; init(); }, 1500);
-}
-
-function editRecord(id) {
-  let history = JSON.parse(localStorage.getItem('f_history') || "[]");
-  const record = history.find(r => r.id === id);
-  const newType = prompt("Editar tipo (fuerza, aerobico, descanso):", record.type);
-  const newRpe = prompt("Editar RPE (5-9):", record.rpe);
-  
-  if (newType !== null && newRpe !== null) {
-    record.type = newType;
-    record.rpe = newRpe;
-    localStorage.setItem('f_history', JSON.stringify(history));
-    renderHistory();
-  }
-}
-
-function deleteRecord(id) {
-  if (confirm("¿Estás seguro de que quieres eliminar este registro?")) {
-    let history = JSON.parse(localStorage.getItem('f_history') || "[]");
-    history = history.filter(r => r.id !== id);
-    localStorage.setItem('f_history', JSON.stringify(history));
-    renderHistory();
-  }
-}
-
-function renderHistory() {
-  const log = JSON.parse(localStorage.getItem('f_history') || "[]");
-  document.getElementById('history-log').innerHTML = log.map(h => `
-    <div class="history-item">
-      <div><strong>${h.date}</strong> - ${h.type.toUpperCase()} - RPE: ${h.rpe}</div>
-      <div class="history-actions">
-        <button class="btn-action-small btn-edit" onclick="editRecord(${h.id})">Editar</button>
-        <button class="btn-action-small btn-delete" onclick="deleteRecord(${h.id})">Borrar</button>
-      </div>
+        <div class="card">
+            <select id="rpe-input">
+                <option value="">¿Esfuerzo hoy?</option>
+                <option value="5">5 - Muy ligero</option>
+                <option value="6">6 - Cómodo</option>
+                <option value="7">7 - Ideal</option>
+                <option value="8">8 - Difícil</option>
+                <option value="9">9 - Extremo</option>
+            </select>
+            <button class="btn-main" onclick="saveSession()">GUARDAR Y SINCRONIZAR</button>
+        </div>
     </div>
-  `).join('');
-}
 
-init();
-</script>
+    <div id="page-stats" class="page hidden">
+        <h1>Progreso</h1>
+        <div class="card"><span class="stat-label">Tendencia RPE</span><canvas id="growthChart" style="margin-top:20px;"></canvas></div>
+        <div class="card"><span class="stat-label">Últimas Sesiones</span><div id="history-cont" style="margin-top:10px;"></div></div>
+    </div>
+
+    <div id="page-bio" class="page hidden">
+        <h1>Bio-Tips</h1>
+        <div class="card"><h3>🧬 Masa Muscular</h3><p style="color:#8e8e93; font-size:14px;">A partir de los 40, es tu seguro de vida. No faltes a tus días de fuerza.</p></div>
+        <div class="card"><h3>🍗 Proteína</h3><p style="color:#8e8e93; font-size:14px;">Asegura 1.6g por cada kilo de peso para reparar tejidos.</p></div>
+    </div>
+
+    <nav class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('train')">HOY</button>
+        <button class="tab-btn" onclick="switchTab('stats')">PROGRESO</button>
+        <button class="tab-btn" onclick="switchTab('bio')">GUÍA</button>
+    </nav>
+
 </body>
 </html>

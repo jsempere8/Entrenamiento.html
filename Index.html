@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entrenamiento Progresivo</title>
+<style>
+body {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #f4f6f8;
+  margin: 0;
+  padding: 16px;
+  color: #222;
+}
+h1, h2 {
+  margin-top: 0;
+}
+.card {
+  background: #fff;
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: #007aff;
+  color: #fff;
+  font-size: 12px;
+}
+.small {
+  font-size: 13px;
+  color: #555;
+}
+select {
+  width: 100%;
+  padding: 10px;
+  font-size: 16px;
+}
+.footer {
+  text-align: center;
+  font-size: 12px;
+  color: #777;
+}
+</style>
+</head>
+
+<body>
+
+<h1>💪 Entrenamiento Hoy</h1>
+
+<div id="today" class="card"></div>
+
+<div id="forceDetails" class="card" style="display:none;"></div>
+
+<div class="card">
+<h2>⌚ RPE post-entreno</h2>
+<select id="rpe" onchange="saveRPE()">
+  <option value="">Selecciona RPE</option>
+  <option value="5">5 – Muy cómodo</option>
+  <option value="6">6 – Cómodo</option>
+  <option value="7">7 – Exigente controlado</option>
+  <option value="8">8 – Duro</option>
+  <option value="9">9 – Muy duro</option>
+</select>
+<p id="rpeMsg" class="small"></p>
+</div>
+
+<div class="footer">
+Sistema progresivo de fuerza + salud +40
+</div>
+
+<script>
+/* ===== CONFIGURACIÓN BASE ===== */
+const baseExercises = [
+  "Sentadillas",
+  "Flexiones",
+  "Zancadas",
+  "Plancha"
+];
+
+let level = parseInt(localStorage.getItem("force_level") || "1");
+let reps = parseInt(localStorage.getItem("force_reps") || "10");
+let rounds = parseInt(localStorage.getItem("force_rounds") || "2");
+
+/* ===== DÍA ===== */
+const days = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+const today = new Date();
+const dayName = days[today.getDay()];
+const dayKey = today.toISOString().slice(0,10);
+
+/* ===== SESIONES ===== */
+const sessions = {
+  lunes: "fuerza",
+  miércoles: "fuerza",
+  viernes: "fuerza_ligera"
+};
+
+const todayType = sessions[dayName] || "otro";
+
+/* ===== MOSTRAR SESIÓN ===== */
+const todayDiv = document.getElementById("today");
+const forceDiv = document.getElementById("forceDetails");
+
+if(todayType === "fuerza" || todayType === "fuerza_ligera"){
+  todayDiv.innerHTML = `
+    <span class="badge">${dayName.toUpperCase()}</span>
+    <h2>Fuerza funcional</h2>
+    <p class="small">Nivel actual: ${level}</p>
+    <p>RPE objetivo: ${todayType === "fuerza" ? "6–7" : "5–6"}</p>
+  `;
+
+  forceDiv.style.display = "block";
+  forceDiv.innerHTML = `
+    <h2>📋 Detalle</h2>
+    <ul class="small">
+      ${baseExercises.map(e => `<li>${e}: ${reps} reps</li>`).join("")}
+    </ul>
+    <p class="small"><strong>Rondas:</strong> ${rounds}</p>
+  `;
+} else {
+  todayDiv.innerHTML = `
+    <span class="badge">${dayName.toUpperCase()}</span>
+    <h2>Sesión no fuerza</h2>
+    <p class="small">Sigue el plan aeróbico o descanso.</p>
+  `;
+}
+
+/* ===== PROGRESIÓN AUTOMÁTICA ===== */
+function saveRPE(){
+  const r = parseInt(document.getElementById("rpe").value);
+  if(!r) return;
+
+  localStorage.setItem(dayKey+"_rpe", r);
+
+  if(todayType === "fuerza"){
+    if(r <= 6){
+      reps += 1;
+      if(reps > 14){
+        reps = 10;
+        rounds += 1;
+      }
+      level += 1;
+      msg = "Progresión aplicada. Buen trabajo.";
+    } else if(r === 7){
+      msg = "Nivel adecuado. Mantienes carga.";
+    } else {
+      reps = Math.max(8, reps - 2);
+      rounds = Math.max(2, rounds - 1);
+      msg = "Carga reducida para recuperar.";
+    }
+
+    localStorage.setItem("force_level", level);
+    localStorage.setItem("force_reps", reps);
+    localStorage.setItem("force_rounds", rounds);
+  } else {
+    msg = "Registro guardado.";
+  }
+
+  document.getElementById("rpeMsg").innerText = msg;
+}
+
+const saved = localStorage.getItem(dayKey+"_rpe");
+if(saved){
+  document.getElementById("rpe").value = saved;
+}
+</script>
+
+</body>
+</html>

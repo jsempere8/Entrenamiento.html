@@ -78,13 +78,20 @@ button {
   justify-content: space-between;
   align-items: center;
 }
-.btn-edit-small {
-  background: #444;
-  padding: 5px 10px;
+.history-actions {
+  display: flex;
+  gap: 5px;
+}
+.btn-action-small {
+  padding: 6px 10px;
   border-radius: 8px;
   font-size: 11px;
   width: auto;
+  font-weight: bold;
 }
+.btn-edit { background: #444; color: white; }
+.btn-delete { background: var(--danger); color: white; }
+
 select {
   width: 100%;
   padding: 12px;
@@ -131,10 +138,10 @@ input[type="checkbox"] { transform: scale(1.3); margin-right: 10px; vertical-ali
   <select id="rpe-select">
     <option value="">¿Cómo fue el esfuerzo (RPE)?</option>
     <option value="5">5 - Muy suave</option>
-    <option value="6">6 - Cómodo (Sube dificultad)</option>
-    <option value="7">7 - Moderado (Ideal)</option>
-    <option value="8">8 - Difícil (Mantener)</option>
-    <option value="9">9 - Límite (Bajar dificultad)</option>
+    <option value="6">6 - Cómodo</option>
+    <option value="7">7 - Moderado</option>
+    <option value="8">8 - Difícil</option>
+    <option value="9">9 - Límite</option>
   </select>
   <button class="btn-save" onclick="completeWorkout()">Guardar Sesión</button>
   <button class="btn-guide" onclick="toggleGuide()">💡 Guía de Alimentos</button>
@@ -261,12 +268,24 @@ function editRecord(id) {
   }
 }
 
+function deleteRecord(id) {
+  if (confirm("¿Estás seguro de que quieres eliminar este registro?")) {
+    let history = JSON.parse(localStorage.getItem('f_history') || "[]");
+    history = history.filter(r => r.id !== id);
+    localStorage.setItem('f_history', JSON.stringify(history));
+    renderHistory();
+  }
+}
+
 function renderHistory() {
   const log = JSON.parse(localStorage.getItem('f_history') || "[]");
   document.getElementById('history-log').innerHTML = log.map(h => `
     <div class="history-item">
       <div><strong>${h.date}</strong> - ${h.type.toUpperCase()} - RPE: ${h.rpe}</div>
-      <button class="btn-edit-small" onclick="editRecord(${h.id})">Editar</button>
+      <div class="history-actions">
+        <button class="btn-action-small btn-edit" onclick="editRecord(${h.id})">Editar</button>
+        <button class="btn-action-small btn-delete" onclick="deleteRecord(${h.id})">Borrar</button>
+      </div>
     </div>
   `).join('');
 }

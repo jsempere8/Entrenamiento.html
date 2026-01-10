@@ -68,7 +68,23 @@ button {
 .btn-timer { background: transparent; border: 2px solid var(--primary); color: var(--primary); margin-top: 10px; }
 .btn-save { background: var(--accent); margin-top: 15px; }
 .btn-guide { background: #444; margin-top: 10px; font-size: 14px; padding: 10px; }
-.history-item { font-size: 13px; color: var(--text-dim); margin-bottom: 6px; border-bottom: 1px solid #333; padding-bottom: 4px; }
+.history-item { 
+  font-size: 13px; 
+  color: var(--text-dim); 
+  margin-bottom: 8px; 
+  border-bottom: 1px solid #333; 
+  padding-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.btn-edit-small {
+  background: #444;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  width: auto;
+}
 select {
   width: 100%;
   padding: 12px;
@@ -149,12 +165,6 @@ const sessions = {
   viernes: "fuerza_ligera", sábado: "montaña", domingo: "montaña" 
 };
 
-const cardioRoutines = [
-  { title: "🔥 HIIT 40' (Zona 2-4)", desc: "Intervalos de alta intensidad." },
-  { title: "🏃 Base Aeróbica (Zona 2)", desc: "Ritmo constante y suave." },
-  { title: "⛰️ Pendiente/Escaleras (Zona 2-3)", desc: "Caminata rápida con desnivel." }
-];
-
 /* ESTADO */
 let level = parseInt(localStorage.getItem("f_level") || "1");
 let reps = parseInt(localStorage.getItem("f_reps") || "10");
@@ -167,11 +177,12 @@ const nextDayName = days[(todayDate.getDay() + 1) % 7];
 const todayType = sessions[dayName] || "descanso";
 const nextDayType = sessions[nextDayName] || "descanso";
 
+let timerInterval;
+
 function init() {
   document.getElementById('date-label').innerText = dayName;
   const area = document.getElementById('content-area');
   
-  // Renderizar hoy
   if (todayType.includes("fuerza")) {
     area.innerHTML = `
       <div class="card">
@@ -190,21 +201,13 @@ function init() {
       <div class="card" style="text-align:center"><h2>⏱️ Descanso</h2><div id="timer-display" class="timer">01:30</div><button class="btn-timer" onclick="startTimer()">Iniciar</button></div>`;
   } else if (todayType === "aerobico") {
     area.innerHTML = `<div class="card"><h2>🏃 Aeróbico Hoy</h2><div class="routine-box"><h3>Actividad de 40 min</h3><p>Consulta las zonas en tu Apple Watch.</p></div></div>`;
-  } else if (todayType === "montaña") {
-    area.innerHTML = `<div class="card"><h2>⛰️ Fin de Semana</h2><p>Día de montaña y aire libre.</p></div>`;
   } else {
-    area.innerHTML = `<div class="card"><h2>🧘 Descanso</h2><p>Recuperación activa.</p></div>`;
+    area.innerHTML = `<div class="card"><h2>🧘 Recuperación/Montaña</h2><p>Día para disfrutar o recuperar.</p></div>`;
   }
 
-  // Renderizar mañana
   const nextArea = document.getElementById('next-day-area');
-  let nextInfo = "";
-  if(nextDayType.includes("fuerza")) nextInfo = `💪 <b>Sesión de Fuerza:</b> Toca seguir progresando en nivel ${level}.`;
-  else if(nextDayType === "aerobico") nextInfo = `🏃 <b>Cardio 40 min:</b> Mañana toca foco en el corazón (Zona 2).`;
-  else if(nextDayType === "montaña") nextInfo = `⛰️ <b>A la montaña:</b> ¡Prepárate para el aire libre!`;
-  else nextInfo = `🧘 <b>Descanso:</b> Mañana toca recuperar el cuerpo.`;
-  
-  nextArea.innerHTML = `<p style="margin:0; font-size:14px;">${nextInfo}</p>`;
+  let nextInfo = nextDayType.includes("fuerza") ? `💪 Fuerza Nivel ${level}` : nextDayType === "aerobico" ? `🏃 Cardio 40 min` : `🧘 Descanso/Montaña`;
+  nextArea.innerHTML = `<p style="margin:0; font-size:14px;">Mañana: ${nextInfo}</p>`;
   
   renderHistory();
 }
@@ -228,22 +231,44 @@ function startTimer() {
 function completeWorkout() {
   const rpe = document.getElementById('rpe-select').value;
   if(!rpe) return alert("Selecciona RPE");
-  if(todayType.includes("fuerza")) {
-    if(parseInt(rpe) <= 6) { reps++; if(reps > 15) { reps = 10; rounds++; if(rounds > 5) { rounds = 3; level++; } } }
-    else if(parseInt(rpe) >= 8) { reps = Math.max(8, reps - 1); }
-    localStorage.setItem("f_level", level); localStorage.setItem("f_reps", reps); localStorage.setItem("f_rounds", rounds);
-  }
+  
+  const record = { 
+    id: Date.now(),
+    date: new Date().toLocaleDateString('es-ES', {day: 'numeric', month: 'short'}), 
+    type: todayType, 
+    rpe: rpe 
+  };
+
   let history = JSON.parse(localStorage.getItem('f_history') || "[]");
-  history.unshift({ date: new Date().toLocaleDateString('es-ES', {day: 'numeric', month: 'short'}), type: todayType, rpe: rpe });
+  history.unshift(record);
   localStorage.setItem('f_history', JSON.stringify(history.slice(0,7)));
   
   document.getElementById('msg').innerText = "✅ ¡Guardado!";
   setTimeout(() => { document.getElementById('msg').innerText = ""; init(); }, 1500);
 }
 
+function editRecord(id) {
+  let history = JSON.parse(localStorage.getItem('f_history') || "[]");
+  const record = history.find(r => r.id === id);
+  const newType = prompt("Editar tipo (fuerza, aerobico, descanso):", record.type);
+  const newRpe = prompt("Editar RPE (5-9):", record.rpe);
+  
+  if (newType !== null && newRpe !== null) {
+    record.type = newType;
+    record.rpe = newRpe;
+    localStorage.setItem('f_history', JSON.stringify(history));
+    renderHistory();
+  }
+}
+
 function renderHistory() {
   const log = JSON.parse(localStorage.getItem('f_history') || "[]");
-  document.getElementById('history-log').innerHTML = log.map(h => `<div class="history-item"><strong>${h.date}</strong> - ${h.type.toUpperCase()} - RPE: ${h.rpe}</div>`).join('');
+  document.getElementById('history-log').innerHTML = log.map(h => `
+    <div class="history-item">
+      <div><strong>${h.date}</strong> - ${h.type.toUpperCase()} - RPE: ${h.rpe}</div>
+      <button class="btn-edit-small" onclick="editRecord(${h.id})">Editar</button>
+    </div>
+  `).join('');
 }
 
 init();

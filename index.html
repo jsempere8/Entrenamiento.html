@@ -1,638 +1,326 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>BioHacker Dashboard Stable</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import {
-      getFirestore, doc, setDoc,
-      collection, query, orderBy, limit, onSnapshot, addDoc, deleteDoc
-    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-    // ---------------- Firebase config ----------------
-    const firebaseConfig = {
-      apiKey: "AIzaSyD1xdMdcbHXgGAL008bdmq22SNgLVcC9jM",
-      authDomain: "appweb-entrenamiento.firebaseapp.com",
-      projectId: "appweb-entrenamiento",
-      storageBucket: "appweb-entrenamiento.firebasestorage.app",
-      messagingSenderId: "199318318696",
-      appId: "1:199318318696:web:04c592f117296e375215dd"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // ---------------- Estilos (ORIGINAL) ----------------
-    const styles = `
-      :root { --primary: #0a84ff; --bg: #000; --card: #1c1c1e; --text: #fff; --accent: #30d158; --warning: #ffd60a; --danger: #ff453a; }
-      body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; padding-bottom: 120px; }
-
-      .card { background: var(--card); padding: 18px; border-radius: 20px; margin-bottom: 15px; border: 1px solid #2c2c2e; position: relative; }
-      .section-dynamic { display: none; }
-      .section-dynamic.active { display: block; animation: fadeIn 0.5s; }
-
-      .grid-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
-      .stat-box { background: #2c2c2e; padding: 15px; border-radius: 15px; text-align: center; border: 1px solid #3a3a3c; }
-      .stat-value { font-size: 24px; font-weight: 800; color: var(--text); }
-      .stat-label { font-size: 10px; text-transform: uppercase; color: #8e8e93; }
-
-      .week-container { display: flex; justify-content: space-between; align-items: center; background: #1c1c1e; padding: 15px; border-radius: 20px; margin-bottom: 20px; border: 1px solid #3a3a3c; }
-      .dot { width: 10px; height: 10px; border-radius: 50%; background: #3a3a3c; margin-right: 5px; display: inline-block; }
-      .dot.active { background: var(--accent); box-shadow: 0 0 5px var(--accent); }
-
-      .btn-main { width: 100%; background: var(--primary); color: #fff; border: none; padding: 16px; border-radius: 14px; font-size: 16px; font-weight: 700; margin-top: 10px; cursor: pointer; }
-      input, select { width: 100%; padding: 14px; border-radius: 12px; background: #121212; color: #fff; border: 1px solid #3a3a3c; margin-top: 8px; box-sizing: border-box; font-size: 16px; }
-
-      .trekking-mode { border: 1px solid var(--warning); background: rgba(255, 214, 10, 0.1); color: #ffd60a; }
-
-      .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(28,28,30,0.95); backdrop-filter: blur(20px); display: flex; padding: 15px; border-top: 0.5px solid #3a3a3c; z-index: 999; }
-      .tab-btn { flex: 1; background: none; border: none; color: #8e8e93; font-size: 10px; font-weight: 600; }
-      .tab-btn.active { color: var(--primary); }
-      .hidden { display: none !important; }
-
-      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-      .checklist-item { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #2c2c2e; }
-      .cb { width: 20px; height: 20px; border: 2px solid #8e8e93; border-radius: 5px; margin-right: 10px; }
-      .checked .cb { background: var(--primary); border-color: var(--primary); }
-    `;
-    const styleSheet = document.createElement("style");
-    styleSheet.innerText = styles;
-    document.head.appendChild(styleSheet);
-
-    // ---------------- Estado ----------------
-    let level = 1, reps = 10, weight = 72;
-    let suggestedType = "Fuerza A";
-    let timerInt, timeLeft;
-
-    // Flags sencillos (anti-estancamiento/fatiga)
-    let progFlags = { completed: false, veryHard: false };
-
-    // Chart
-    let chartInstance;
-
-    // ---------------- Helpers ----------------
-    const $ = (id) => document.getElementById(id);
-
-    function isWeekend(d = new Date()) {
-      const day = d.getDay();
-      return day === 0 || day === 6;
-    }
-
-    function getMonday(d) {
-      const dt = new Date(d);
-      const day = dt.getDay() || 7;  // dom -> 7
-      const monday = new Date(dt);
-      monday.setDate(dt.getDate() - day + 1);
-      monday.setHours(0,0,0,0);
-      return monday;
-    }
-
-    function getSuggestedTypeByDay(d = new Date()) {
-      // Plan recomendado: L Fuerza A, M Z2, X Movilidad, J Fuerza B, V Z2, finde Trekking
-      const day = d.getDay(); // 0 dom ... 6 sáb
-      if (day === 0 || day === 6) return "Trekking";
-      const idx = day - 1; // lun..vie => 0..4
-      const pattern = ["Fuerza A", "Zona 2 (Cardio)", "Movilidad", "Fuerza B", "Zona 2 (Cardio)"];
-      return pattern[idx] || "Movilidad";
-    }
-
-    function plannedWeekCount() { return 4; } // FuerzaA + Z2 + FuerzaB + Z2 (movilidad no cuenta)
-    function isPlannedType(type) {
-      return type === "Fuerza" || type === "Fuerza A" || type === "Fuerza B" || type === "Zona 2 (Cardio)";
-    }
-
-    function setFlagsUI() {
-      $("f-completed").classList.toggle("checked", !!progFlags.completed);
-      $("f-veryhard").classList.toggle("checked", !!progFlags.veryHard);
-    }
-
-    window.toggleFlag = (key) => {
-      progFlags[key] = !progFlags[key];
-      setFlagsUI();
-    };
-
-    function loadBioChecks() {
-      const today = new Date().toLocaleDateString();
-      const data = JSON.parse(localStorage.getItem('bioChecks') || '{}');
-      if(data[today]) {
-        if(data[today]['c1']) $('c1').classList.add('checked');
-        if(data[today]['c2']) $('c2').classList.add('checked');
-        if(data[today]['c3']) $('c3').classList.add('checked');
-      }
-    }
-
-    window.toggleCheck = (id) => {
-      const el = $(id);
-      el.classList.toggle('checked');
-      const data = JSON.parse(localStorage.getItem('bioChecks') || '{}');
-      const today = new Date().toLocaleDateString();
-      if(!data[today]) data[today] = {};
-      data[today][id] = el.classList.contains('checked');
-      localStorage.setItem('bioChecks', JSON.stringify(data));
-    };
-
-    // ---------------- Rutinas (texto guía) ----------------
-    function routineFor(type) {
-      if (type === "Fuerza A") {
-        return [
-          "Calentamiento 6 min (movilidad + 2 rondas suaves).",
-          "Circuito 3–4 rondas (60–90s descanso).",
-          "1) Flexiones 6–15 (RPE 7–8).",
-          "2) Split squat 8–12/ pierna.",
-          "3) Puente glúteo 12–20.",
-          "4) Plancha 30–60s."
-        ];
-      }
-      if (type === "Fuerza B") {
-        return [
-          "Calentamiento 6 min.",
-          "Circuito 3–4 rondas (60–90s descanso).",
-          "1) Remo con mochila (o isométrico toalla) 8–15.",
-          "2) RDL a una pierna 8–12/ pierna.",
-          "3) Pike push-up 6–12 (o flexión inclinada).",
-          "4) Dead bug 8–12/ lado."
-        ];
-      }
-      if (type === "Zona 2 (Cardio)") {
-        return [
-          "Zona 2 30–40 min (ritmo conversacional).",
-          "Opciones: caminar rápido, bici estática, escaleras suave.",
-          "Si estás cansado: 20–30 min + movilidad 5–10 min."
-        ];
-      }
-      if (type === "Movilidad") {
-        return [
-          "Movilidad 15–25 min.",
-          "Cadera + tobillo + torácica.",
-          "Respiración 2–3 min + estiramientos suaves."
-        ];
-      }
-      // Trekking
-      return [
-        "Trekking a ritmo cómodo.",
-        "Anota minutos, desnivel y RPE (si quieres).",
-        "Hidratación + snack sencillo."
-      ];
-    }
-
-    function renderRoutineBox(type) {
-      const box = $("routine-box");
-      if (!box) return;
-      const lines = routineFor(type);
-      box.innerHTML =
-        `<div style="font-size:10px; color:#888; text-transform:uppercase; margin-top:12px;">RUTINA HOY</div>` +
-        `<ul style="margin:8px 0 0 18px; padding:0;">` +
-          lines.map(x => `<li style="margin:6px 0; font-size:13px; color:#d1d1d6;">${x}</li>`).join("") +
-        `</ul>`;
-    }
-
-    // ---------------- Guardar sesión ----------------
-    window.saveSession = async () => {
-      const rpe = parseInt($('input-rpe').value || "0", 10);
-      const w = parseFloat($('input-weight').value || "0");
-      const minutes = parseInt($('input-minutes').value || "0", 10);
-      const elev = parseInt($('input-elev').value || "0", 10);
-
-      suggestedType = getSuggestedTypeByDay(new Date());
-
-      if (!w || w < 30) return alert("Por favor, rellena Peso (kg).");
-      if (!minutes || minutes < 5) return alert("Por favor, rellena Duración (min).");
-      if (minutes > 40) return alert("Máximo 40 min.");
-
-      const needsRPE = !(suggestedType === "Movilidad"); // movilidad puede ir sin RPE
-      if (needsRPE && (!rpe || rpe < 1) && suggestedType !== "Trekking") {
-        return alert("Por favor, rellena RPE.");
-      }
-
-      const btn = $('btn-save');
-      btn.innerText = "Guardando...";
-      btn.disabled = true;
-
-      await addDoc(collection(db, "workouts"), {
-        date: new Date().toISOString(),
-        type: suggestedType,
-        rpe: (suggestedType === "Trekking" && !rpe) ? 0 : rpe,
-        weight: w,
-        durationMin: minutes,
-        elevM: (suggestedType === "Trekking") ? (elev || 0) : 0,
-        completed: !!progFlags.completed,
-        veryHard: !!progFlags.veryHard
-      });
-
-      // stats (tu lógica original, pero sin reload)
-      let updateData = { weight: w };
-      if ((suggestedType.includes("Fuerza") || suggestedType === "Fuerza") && rpe && rpe <= 6 && progFlags.completed && !progFlags.veryHard) {
-        reps++;
-        if (reps > 15) { reps = 10; level++; }
-        updateData.level = level;
-        updateData.reps = reps;
-      }
-      await setDoc(doc(db, "userStats", "global"), updateData, { merge: true });
-
-      // reset inputs/flags
-      $('input-rpe').value = "";
-      $('input-minutes').value = "";
-      $('input-elev').value = "";
-
-      progFlags = { completed: false, veryHard: false };
-      setFlagsUI();
-
-      btn.innerText = "REGISTRAR SESIÓN";
-      btn.disabled = false;
-
-      alert("¡Guardado!");
-    };
-
-    // ---------------- Timer ----------------
-    window.startTimer = (s) => {
-      clearInterval(timerInt);
-      timeLeft = s;
-      const display = $('timer-val');
-      display.innerText = `0:00`;
-      timerInt = setInterval(() => {
-        timeLeft--;
-        const m = Math.floor(timeLeft/60);
-        const sec = timeLeft%60;
-        display.innerText = `${m}:${sec.toString().padStart(2,'0')}`;
-        if(timeLeft<=0) { clearInterval(timerInt); if (navigator.vibrate) navigator.vibrate(200); }
-      }, 1000);
-    };
-
-    // ---------------- Semana / historial ----------------
-    function renderWeekProgress(logs) {
-      const now = new Date();
-      const monday = getMonday(now);
-
-      const planned = plannedWeekCount();
-
-      const weekLogs = logs
-        .filter(l => new Date(l.date) >= monday)
-        .filter(l => {
-          const d = new Date(l.date);
-          const wd = d.getDay();
-          return wd >= 1 && wd <= 5;
-        })
-        .filter(l => isPlannedType(l.type));
-
-      const count = weekLogs.length;
-
-      $('week-dots').innerHTML = Array(planned).fill(0).map((_,i) =>
-        `<span class="dot ${i<count?'active':''}"></span>`
-      ).join('');
-      $('week-text').innerText = `${count}/${planned} Sesiones`;
-    }
-
-    function renderHistory(logs) {
-      $('history-list').innerHTML = logs.map(l => `
-        <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #333; font-size:13px;">
-          <div>
-            <b>${l.type || "-"}</b><br>
-            <span style="color:#888">
-              ${new Date(l.date).toLocaleDateString()}
-              · ${l.durationMin ? (l.durationMin + " min") : "—"}
-              · ${l.rpe ? ("RPE " + l.rpe) : "—"}
-              ${l.type === "Trekking" && l.elevM ? (" · +" + l.elevM + "m") : ""}
-              ${l.completed ? " · ✅" : ""}
-              ${l.veryHard ? " · ⚠️" : ""}
-            </span>
-          </div>
-          <button onclick="deleteLog('${l.id}')" style="background:none; border:1px solid #ff453a; color:#ff453a; border-radius:5px; padding:2px 10px;">X</button>
-        </div>
-      `).join('');
-    }
-
-    window.deleteLog = async(id) => {
-      if(confirm("¿Borrar?")) await deleteDoc(doc(db,"workouts",id));
-    };
-
-    // ---------------- KPIs “¿voy bien?” ----------------
-    function computeWeeklyKPIs(logs) {
-      const now = new Date();
-      const monday = getMonday(now);
-      const weekLogs = logs.filter(l => new Date(l.date) >= monday);
-
-      const strength = weekLogs.filter(l => (l.type || "").includes("Fuerza")).length;
-
-      const aeroMin = weekLogs
-        .filter(l => l.type === "Zona 2 (Cardio)" || l.type === "Trekking")
-        .reduce((acc, l) => acc + Number(l.durationMin || 0), 0);
-
-      const planned = plannedWeekCount();
-      const donePlanned = weekLogs
-        .filter(l => {
-          const d = new Date(l.date);
-          const wd = d.getDay();
-          return wd >= 1 && wd <= 5;
-        })
-        .filter(l => isPlannedType(l.type)).length;
-
-      const adherence = planned ? Math.min(100, Math.round(100 * donePlanned / planned)) : 0;
-
-      // Carga interna sRPE (RPE * minutos)
-      const load = weekLogs.reduce((acc, l) => acc + (Number(l.rpe || 0) * Number(l.durationMin || 0)), 0);
-
-      // Fatiga: % de sesiones "muy duras" (flag o RPE>=9)
-      const totalSessions = weekLogs.length || 1;
-      const hardCount = weekLogs.filter(l => l.veryHard || Number(l.rpe || 0) >= 9).length;
-      const hardPct = Math.round(100 * hardCount / totalSessions);
-
-      // Semáforo simple
-      const strengthStatus = strength >= 2 ? "green" : strength === 1 ? "yellow" : "red";
-      const aeroStatus = aeroMin >= 150 ? "green" : aeroMin >= 90 ? "yellow" : "red";
-
-      return { strength, aeroMin, adherence, load, hardPct, strengthStatus, aeroStatus };
-    }
-
-    function colorFor(status) {
-      if (status === "green") return "var(--accent)";
-      if (status === "yellow") return "var(--warning)";
-      return "var(--danger)";
-    }
-
-    function renderKPIs(k) {
-      const box = $("kpi-box");
-      if (!box) return;
-
-      box.innerHTML = `
-        <div class="stat-box">
-          <div class="stat-value" style="color:${colorFor(k.strengthStatus)}">${k.strength}</div>
-          <div class="stat-label">Fuerza/sem</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-value" style="color:${colorFor(k.aeroStatus)}">${k.aeroMin}</div>
-          <div class="stat-label">Min aeróbicos/sem</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-value">${k.adherence}%</div>
-          <div class="stat-label">Adherencia</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-value">${k.load}</div>
-          <div class="stat-label">Carga sRPE</div>
-        </div>
-      `;
-
-      const msg = $("coach-msg");
-      if (msg) {
-        const rec =
-          (k.strengthStatus === "green" && k.aeroStatus === "green")
-            ? "Vas muy bien: consistencia + base aeróbica en rango."
-            : (k.strengthStatus !== "green" && k.aeroStatus === "green")
-              ? "Prioriza 2 sesiones de fuerza/semana (mínimo)."
-              : (k.strengthStatus === "green" && k.aeroStatus !== "green")
-                ? "Suma minutos de Z2/trekking (objetivo 150 min/semana)."
-                : "Semana baja: busca al menos 2 fuerza y 90–150 min aeróbicos.";
-
-        const fatigueNote = (k.hardPct >= 40) ? " Fatiga alta: si se repite, reduce volumen 1 semana." : "";
-        msg.innerText = rec + fatigueNote;
-      }
-    }
-
-    // ---------------- Chart semanal (combo: barras + línea) ----------------
-    function getWeekKey(dateObj) {
-      const d = new Date(dateObj);
-      const day = d.getDay() || 7;
-      const monday = new Date(d);
-      monday.setDate(d.getDate() - day + 1);
-      monday.setHours(0,0,0,0);
-      return monday.toISOString().slice(0,10);
-    }
-
-    function updateChart(logs) {
-      const ctx = $('chart').getContext('2d');
-
-      // agrupar por semana (últimas ~10 semanas)
-      const byWeek = new Map();
-      const sorted = [...logs].sort((a,b) => new Date(a.date) - new Date(b.date));
-
-      sorted.forEach(l => {
-        const key = getWeekKey(l.date);
-        if (!byWeek.has(key)) byWeek.set(key, { aero: 0, strength: 0, rpeSum: 0, rpeN: 0 });
-
-        const w = byWeek.get(key);
-        const min = Number(l.durationMin || 0);
-
-        if (l.type === "Zona 2 (Cardio)" || l.type === "Trekking") w.aero += min;
-        if ((l.type || "").includes("Fuerza")) w.strength += 1;
-
-        const r = Number(l.rpe || 0);
-        if (r > 0) { w.rpeSum += r; w.rpeN += 1; }
-      });
-
-      const labels = [...byWeek.keys()].slice(-10); // últimas 10 semanas
-      const aero = labels.map(k => byWeek.get(k).aero);
-      const strength = labels.map(k => byWeek.get(k).strength);
-      const rpeAvg = labels.map(k => {
-        const w = byWeek.get(k);
-        return w.rpeN ? Number((w.rpeSum / w.rpeN).toFixed(1)) : 0;
-      });
-
-      if(chartInstance) chartInstance.destroy();
-
-      chartInstance = new Chart(ctx, {
-         {
-          labels,
-          datasets: [
-            { type: 'bar', label: 'Min Z2+Trek',  aero, backgroundColor: 'rgba(48, 209, 88, 0.35)' },
-            { type: 'bar', label: 'Fuerza (sesiones)',  strength, backgroundColor: 'rgba(10, 132, 255, 0.35)' },
-            { type: 'line', label: 'RPE medio',  rpeAvg, borderColor: '#ffd60a', tension: 0.3, yAxisID: 'y2' }
-          ]
-        },
-        options: {
-          plugins: { legend: { display: true, labels: { color: '#e5e5ea', boxWidth: 10 } } },
-          scales: {
-            x: { ticks: { display: false }, grid: { display: false } },
-            y: { ticks: { display: false }, grid: { display: false }, beginAtZero: true },
-            y2: { position: 'right', ticks: { display: false }, grid: { drawOnChartArea: false }, min: 0, max: 10 }
-          }
-        }
-      });
-    }
-
-    // ---------------- Tabs (fix) ----------------
-    window.switchTab = (t, ev) => {
-      document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));
-      $('p-'+t).classList.remove('hidden');
-      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-      if (ev?.currentTarget) ev.currentTarget.classList.add('active');
-    };
-
-    // ---------------- Init ----------------
-    window.initApp = async () => {
-      loadBioChecks();
-      setFlagsUI();
-
-      // Stats y 1RM (tu lógica original)
-      onSnapshot(doc(db, "userStats", "global"), (docSnap) => {
-        if(docSnap.exists()) {
-          const d = docSnap.data();
-          level = d.level || 1;
-          reps = d.reps || 10;
-          weight = d.weight || 72;
-
-          $('lvl-val').innerText = level;
-          $('input-weight').value = weight;
-
-          // 1RM estimado (Epley) sobre "peso" (en tu app lo usamos como indicador gamificado)
-          const oneRM = Math.round(weight * (1 + (reps / 30)));
-          $('rm-val').innerText = oneRM + "kg";
-        }
-      });
-
-      // Workouts
-      onSnapshot(query(collection(db, "workouts"), orderBy("date", "desc"), limit(120)), (snapshot) => {
-        const logs = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
-
-        renderHistory(logs.slice(0, 30));
-        renderWeekProgress(logs);
-        updateChart(logs);
-
-        // Contexto día (determinista)
-        const wknd = isWeekend(new Date());
-        suggestedType = getSuggestedTypeByDay(new Date());
-        $('global-title').innerText = suggestedType;
-
-        if (wknd) {
-          $('panel-weekday').classList.remove('active');
-          $('panel-weekend').classList.add('active');
-
-          const w = parseFloat($('input-weight').value) || 72;
-          $('trek-water').innerText = (w * 0.035).toFixed(1) + " L";
-
-          $('input-elev').classList.remove('hidden');
-        } else {
-          $('panel-weekend').classList.remove('active');
-          $('panel-weekday').classList.add('active');
-
-          $('input-elev').classList.add('hidden');
-
-          // Título y rutina
-          $('gym-instruction').innerText =
-            suggestedType === "Zona 2 (Cardio)" ? "🏃 Objetivo: Cardio Suave (≤40min)" :
-            suggestedType === "Fuerza A" ? "🏋️ Objetivo: Fuerza A (≤40min)" :
-            suggestedType === "Fuerza B" ? "🏋️ Objetivo: Fuerza B (≤40min)" :
-            "🧘 Objetivo: Movilidad (15–25min)";
-
-          renderRoutineBox(suggestedType);
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BioHacker Dashboard Stable</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, setDoc, updateDoc, collection, query, orderBy, limit, onSnapshot, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD1xdMdcbHXgGAL008bdmq22SNgLVcC9jM",
+            authDomain: "appweb-entrenamiento.firebaseapp.com",
+            projectId: "appweb-entrenamiento",
+            storageBucket: "appweb-entrenamiento.firebasestorage.app",
+            messagingSenderId: "199318318696",
+            appId: "1:199318318696:web:04c592f117296e375215dd"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // --- ESTILOS ---
+        const styles = `
+            :root { --primary: #0a84ff; --bg: #000; --card: #1c1c1e; --text: #fff; --accent: #30d158; --warning: #ffd60a; --danger: #ff453a; }
+            body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; padding-bottom: 120px; }
+            
+            /* Estructura Base */
+            .card { background: var(--card); padding: 18px; border-radius: 20px; margin-bottom: 15px; border: 1px solid #2c2c2e; position: relative; }
+            .section-dynamic { display: none; } /* Oculto por defecto hasta que JS decida */
+            .section-dynamic.active { display: block; animation: fadeIn 0.5s; }
+
+            /* Stats */
+            .grid-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
+            .stat-box { background: #2c2c2e; padding: 15px; border-radius: 15px; text-align: center; border: 1px solid #3a3a3c; }
+            .stat-value { font-size: 24px; font-weight: 800; color: var(--text); }
+            .stat-label { font-size: 10px; text-transform: uppercase; color: #8e8e93; }
+            
+            /* Week Dots */
+            .week-container { display: flex; justify-content: space-between; align-items: center; background: #1c1c1e; padding: 15px; border-radius: 20px; margin-bottom: 20px; border: 1px solid #3a3a3c; }
+            .dot { width: 10px; height: 10px; border-radius: 50%; background: #3a3a3c; margin-right: 5px; display: inline-block; }
+            .dot.active { background: var(--accent); box-shadow: 0 0 5px var(--accent); }
+
+            /* Inputs & Botones */
+            .btn-main { width: 100%; background: var(--primary); color: #fff; border: none; padding: 16px; border-radius: 14px; font-size: 16px; font-weight: 700; margin-top: 10px; cursor: pointer; }
+            input, select { width: 100%; padding: 14px; border-radius: 12px; background: #121212; color: #fff; border: 1px solid #3a3a3c; margin-top: 8px; box-sizing: border-box; font-size: 16px; }
+            
+            /* Trekking Especial */
+            .trekking-mode { border: 1px solid var(--warning); background: rgba(255, 214, 10, 0.1); color: #ffd60a; }
+
+            /* Tabs */
+            .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(28,28,30,0.95); backdrop-filter: blur(20px); display: flex; padding: 15px; border-top: 0.5px solid #3a3a3c; z-index: 999; }
+            .tab-btn { flex: 1; background: none; border: none; color: #8e8e93; font-size: 10px; font-weight: 600; }
+            .tab-btn.active { color: var(--primary); }
+            .hidden { display: none !important; }
+
+            /* Animación */
+            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+            
+            /* Checklist */
+            .checklist-item { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #2c2c2e; }
+            .cb { width: 20px; height: 20px; border: 2px solid #8e8e93; border-radius: 5px; margin-right: 10px; }
+            .checked .cb { background: var(--primary); border-color: var(--primary); }
+        `;
+        const styleSheet = document.createElement("style"); styleSheet.innerText = styles; document.head.appendChild(styleSheet);
+
+        // --- VARIABLES ---
+        let level = 1, reps = 10, weight = 72;
+        let suggestedType = "Fuerza"; 
+        let timerInt, timeLeft;
+
+        window.initApp = async () => {
+            loadBioChecks();
+
+            // 1. Cargar Stats y 1RM
+            onSnapshot(doc(db, "userStats", "global"), (docSnap) => {
+                if(docSnap.exists()) {
+                    const d = docSnap.data();
+                    level = d.level || 1; reps = d.reps || 10; weight = d.weight || 72;
+                    
+                    document.getElementById('lvl-val').innerText = level;
+                    document.getElementById('weight-val').innerText = weight + "kg";
+                    document.getElementById('input-weight').value = weight;
+                    
+                    // 1RM Estimado
+                    const oneRM = Math.round(weight * (1 + (reps / 30)));
+                    document.getElementById('rm-val').innerText = oneRM + "kg";
+                }
+            });
+
+            // 2. Cargar Historial y Lógica de Día
+            onSnapshot(query(collection(db, "workouts"), orderBy("date", "desc"), limit(20)), (snapshot) => {
+                const logs = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
+                
+                // Renderizar Historial y Gráfica
+                renderHistory(logs);
+                updateChart(logs);
+                renderWeekProgress(logs);
+
+                // Determinar Contexto (Fuerza vs Trekking)
+                const day = new Date().getDay();
+                const isWeekend = (day === 0 || day === 6);
+                
+                // LÓGICA DE VISUALIZACIÓN
+                if (isWeekend) {
+                    // ES FIN DE SEMANA:
+                    suggestedType = "Trekking";
+                    document.getElementById('panel-weekday').classList.remove('active');
+                    document.getElementById('panel-weekend').classList.add('active');
+                    
+                    // Calcular Agua
+                    const w = parseFloat(document.getElementById('input-weight').value) || 72;
+                    document.getElementById('trek-water').innerText = (w * 0.035).toFixed(1) + " L";
+
+                } else {
+                    // ES ENTRE SEMANA:
+                    document.getElementById('panel-weekend').classList.remove('active');
+                    document.getElementById('panel-weekday').classList.add('active');
+                    
+                    // Alternancia Fuerza/Cardio
+                    if (logs.length > 0 && logs[0].type.includes("Fuerza")) {
+                        suggestedType = "Zona 2 (Cardio)";
+                        document.getElementById('gym-instruction').innerText = "🏃 Objetivo: Cardio Suave (45min)";
+                    } else {
+                        suggestedType = "Fuerza";
+                        document.getElementById('gym-instruction').innerText = "🏋️ Objetivo: Rutina de Fuerza";
+                    }
+                }
+                
+                // Título Global
+                document.getElementById('global-title').innerText = suggestedType;
+            });
+        };
+
+        // --- FUNCIONES DEL USUARIO ---
+        
+        window.saveSession = async () => {
+            const rpe = document.getElementById('input-rpe').value;
+            const w = document.getElementById('input-weight').value;
+            
+            if(!rpe || !w) return alert("Por favor, rellena Peso y RPE.");
+
+            const btn = document.getElementById('btn-save');
+            btn.innerText = "Guardando..."; btn.disabled = true;
+
+            await addDoc(collection(db, "workouts"), {
+                date: new Date().toISOString(),
+                rpe: parseInt(rpe),
+                weight: parseFloat(w),
+                type: suggestedType
+            });
+
+            // Actualizar Peso y Nivel si corresponde
+            let updateData = { weight: parseFloat(w) };
+            if(suggestedType === "Fuerza" && rpe <= 6) {
+                reps++; if(reps > 15) { reps = 10; level++; }
+                updateData.level = level; updateData.reps = reps;
+            }
+            await setDoc(doc(db, "userStats", "global"), updateData, {merge: true});
+
+            alert("¡Guardado!");
+            location.reload();
+        };
+
+        // --- UTILS (Timer, Check, Delete) ---
+        window.startTimer = (s) => {
+            clearInterval(timerInt); timeLeft = s;
+            const display = document.getElementById('timer-val');
+            timerInt = setInterval(() => {
+                timeLeft--;
+                const m = Math.floor(timeLeft/60); const sec = timeLeft%60;
+                display.innerText = `${m}:${sec.toString().padStart(2,'0')}`;
+                if(timeLeft<=0) { clearInterval(timerInt); navigator.vibrate(200); }
+            }, 1000);
+        };
+
+        window.toggleCheck = (id) => {
+            const el = document.getElementById(id);
+            el.classList.toggle('checked');
+            // Guardar en LocalStorage
+            const data = JSON.parse(localStorage.getItem('bioChecks') || '{}');
+            const today = new Date().toLocaleDateString();
+            if(!data[today]) data[today] = {};
+            data[today][id] = el.classList.contains('checked');
+            localStorage.setItem('bioChecks', JSON.stringify(data));
+        };
+
+        function loadBioChecks() {
+            const today = new Date().toLocaleDateString();
+            const data = JSON.parse(localStorage.getItem('bioChecks') || '{}');
+            if(data[today]) {
+                if(data[today]['c1']) document.getElementById('c1').classList.add('checked');
+                if(data[today]['c2']) document.getElementById('c2').classList.add('checked');
+                if(data[today]['c3']) document.getElementById('c3').classList.add('checked');
+            }
         }
 
-        // KPIs (página análisis)
-        const kpis = computeWeeklyKPIs(logs);
-        renderKPIs(kpis);
-      });
-    };
+        function renderWeekProgress(logs) {
+            const now = new Date();
+            const day = now.getDay() || 7; 
+            const monday = new Date(now); monday.setDate(now.getDate() - day + 1); monday.setHours(0,0,0,0);
+            
+            const count = logs.filter(l => new Date(l.date) >= monday).length;
+            document.getElementById('week-dots').innerHTML = Array(5).fill(0).map((_,i) => 
+                `<span class="dot ${i<count?'active':''}"></span>`
+            ).join('');
+            document.getElementById('week-text').innerText = `${count}/5 Sesiones`;
+        }
 
-    window.addEventListener('load', initApp);
-  </script>
+        function renderHistory(logs) {
+            document.getElementById('history-list').innerHTML = logs.map(l => `
+                <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #333; font-size:13px;">
+                    <div><b>${l.type}</b><br><span style="color:#888">${new Date(l.date).toLocaleDateString()} · RPE ${l.rpe}</span></div>
+                    <button onclick="deleteLog('${l.id}')" style="background:none; border:1px solid #ff453a; color:#ff453a; border-radius:5px;">X</button>
+                </div>
+            `).join('');
+        }
+        
+        window.deleteLog = async(id) => { if(confirm("¿Borrar?")) await deleteDoc(doc(db,"workouts",id)); };
+
+        // Gráfica Simple
+        let chartInstance;
+        function updateChart(logs) {
+            const ctx = document.getElementById('chart').getContext('2d');
+            const data = [...logs].reverse();
+            if(chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                 {
+                    labels: data.map(l => new Date(l.date).getDate()),
+                    datasets: [{ label:'RPE',  data.map(l=>l.rpe), borderColor:'#0a84ff', tension:0.3 }]
+                },
+                options: { plugins:{legend:{display:false}}, scales:{x:{display:false}, y:{display:false}} }
+            });
+        }
+
+        window.switchTab = (t) => {
+            document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));
+            document.getElementById('p-'+t).classList.remove('hidden');
+            document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+        };
+
+        window.addEventListener('load', initApp);
+    </script>
 </head>
-
 <body>
 
-  <div id="p-dash" class="page">
-
-    <div class="week-container">
-      <div>
-        <div style="font-size:10px; color:#888;">SEMANA ACTUAL</div>
-        <div id="week-text" style="font-weight:bold;">0/4 Sesiones</div>
-      </div>
-      <div id="week-dots"></div>
-    </div>
-
-    <div class="grid-stats">
-      <div class="stat-box">
-        <div class="stat-value" id="lvl-val">-</div>
-        <div class="stat-label">Nivel</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-value" style="color:var(--accent)" id="rm-val">-</div>
-        <div class="stat-label">1RM Est.</div>
-      </div>
-    </div>
-
-    <h2 id="global-title" style="margin:10px 0;">Cargando...</h2>
-
-    <div id="panel-weekend" class="card trekking-mode section-dynamic">
-      <h3 style="margin:0;">🏔️ Modo Montaña</h3>
-      <p>Hidratación sugerida: <b id="trek-water">--</b></p>
-      <div style="font-size:12px; margin-top:5px; border-top:1px solid var(--warning); padding-top:5px;">
-        🥤 <b>Isotónico:</b> Agua + Limón + Sal + Miel.
-      </div>
-    </div>
-
-    <div id="panel-weekday" class="card section-dynamic">
-      <h3 style="margin:0;" id="gym-instruction">Entrenamiento</h3>
-      <div style="display:flex; justify-content:space-between; margin-top:15px; align-items:center;">
-        <span id="timer-val" style="font-size:24px; font-family:monospace; color:var(--primary);">0:00</span>
-        <div style="display:flex; gap:5px;">
-          <button onclick="startTimer(60)" style="background:#333; color:#fff; border:none; padding:5px 10px; border-radius:5px;">1'</button>
-          <button onclick="startTimer(90)" style="background:#333; color:#fff; border:none; padding:5px 10px; border-radius:5px;">1.5'</button>
-          <button onclick="startTimer(120)" style="background:#333; color:#fff; border:none; padding:5px 10px; border-radius:5px;">2'</button>
+    <div id="p-dash" class="page">
+        
+        <div class="week-container">
+            <div>
+                <div style="font-size:10px; color:#888;">SEMANA ACTUAL</div>
+                <div id="week-text" style="font-weight:bold;">0/5 Sesiones</div>
+            </div>
+            <div id="week-dots"></div>
         </div>
-      </div>
 
-      <!-- NUEVO: rutina del día (misma estética) -->
-      <div id="routine-box"></div>
+        <div class="grid-stats">
+            <div class="stat-box">
+                <div class="stat-value" id="lvl-val">-</div>
+                <div class="stat-label">Nivel</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" style="color:var(--accent)" id="rm-val">-</div>
+                <div class="stat-label">1RM Est.</div>
+            </div>
+        </div>
+
+        <h2 id="global-title" style="margin:10px 0;">Cargando...</h2>
+
+        <div id="panel-weekend" class="card trekking-mode section-dynamic">
+            <h3 style="margin:0;">🏔️ Modo Montaña</h3>
+            <p>Hidratación sugerida: <b id="trek-water">--</b></p>
+            <div style="font-size:12px; margin-top:5px; border-top:1px solid var(--warning); padding-top:5px;">
+                🥤 <b>Isotónico:</b> Agua + Limón + Sal + Miel.
+            </div>
+        </div>
+
+        <div id="panel-weekday" class="card section-dynamic">
+            <h3 style="margin:0;" id="gym-instruction">Entrenamiento</h3>
+            <div style="display:flex; justify-content:space-between; margin-top:15px; align-items:center;">
+                <span id="timer-val" style="font-size:24px; font-family:monospace; color:var(--primary);">0:00</span>
+                <div style="display:flex; gap:5px;">
+                    <button onclick="startTimer(60)" style="background:#333; color:#fff; border:none; padding:5px 10px; border-radius:5px;">1'</button>
+                    <button onclick="startTimer(90)" style="background:#333; color:#fff; border:none; padding:5px 10px; border-radius:5px;">1.5'</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="border: 1px solid var(--primary);">
+            <div style="font-size:10px; color:#888; text-transform:uppercase; margin-bottom:5px;">Registrar Actividad</div>
+            <input type="number" id="input-weight" step="0.1" placeholder="Peso (kg)">
+            <select id="input-rpe">
+                <option value="">Nivel de Esfuerzo (RPE)</option>
+                <option value="6">6 - Cómodo</option>
+                <option value="7">7 - Óptimo</option>
+                <option value="8">8 - Duro</option>
+                <option value="9">9 - Máximo</option>
+            </select>
+            <button id="btn-save" class="btn-main" onclick="saveSession()">REGISTRAR SESIÓN</button>
+        </div>
+
+        <div class="card">
+            <div class="checklist-item" id="c1" onclick="toggleCheck('c1')"><div class="cb"></div>Creatina</div>
+            <div class="checklist-item" id="c2" onclick="toggleCheck('c2')"><div class="cb"></div>+7h Sueño</div>
+            <div class="checklist-item" id="c3" onclick="toggleCheck('c3')"><div class="cb"></div>Sol / Naturaleza</div>
+        </div>
+
     </div>
 
-    <div class="card" style="border: 1px solid var(--primary);">
-      <div style="font-size:10px; color:#888; text-transform:uppercase; margin-bottom:5px;">Registrar Actividad</div>
-
-      <input type="number" id="input-weight" step="0.1" placeholder="Peso (kg)">
-
-      <!-- NUEVO: duración -->
-      <input type="number" id="input-minutes" step="1" placeholder="Duración (min) — máx 40">
-
-      <!-- NUEVO: desnivel (solo trekking; se muestra/oculta con hidden) -->
-      <input type="number" id="input-elev" step="10" placeholder="Desnivel (m) (solo trekking)" class="hidden">
-
-      <select id="input-rpe">
-        <option value="">Nivel de Esfuerzo (RPE)</option>
-        <option value="6">6 - Cómodo</option>
-        <option value="7">7 - Óptimo</option>
-        <option value="8">8 - Duro</option>
-        <option value="9">9 - Máximo</option>
-      </select>
-
-      <!-- NUEVO: flags para “progreso” y fatiga (sin cambiar tu estética) -->
-      <div class="card" style="padding:0; margin-top:12px; border:1px solid #2c2c2e; background:#1c1c1e;">
-        <div class="checklist-item" id="f-completed" onclick="toggleFlag('completed')"><div class="cb"></div>Completado (dentro de rango)</div>
-        <div class="checklist-item" id="f-veryhard" onclick="toggleFlag('veryHard')"><div class="cb"></div>Muy duro / fatiga</div>
-      </div>
-
-      <button id="btn-save" class="btn-main" onclick="saveSession()">REGISTRAR SESIÓN</button>
+    <div id="p-stats" class="page hidden">
+        <h1>Análisis</h1>
+        <div class="card"><canvas id="chart" height="150"></canvas></div>
+        <div class="card" id="history-list"></div>
     </div>
 
-    <div class="card">
-      <div class="checklist-item" id="c1" onclick="toggleCheck('c1')"><div class="cb"></div>Creatina</div>
-      <div class="checklist-item" id="c2" onclick="toggleCheck('c2')"><div class="cb"></div>+7h Sueño</div>
-      <div class="checklist-item" id="c3" onclick="toggleCheck('c3')"><div class="cb"></div>Sol / Naturaleza</div>
-    </div>
-
-  </div>
-
-  <div id="p-stats" class="page hidden">
-    <h1>Análisis</h1>
-
-    <!-- NUEVO: KPIs (mismo look stat-box) -->
-    <div id="kpi-box" class="grid-stats"></div>
-    <div class="card" style="margin-top:10px;">
-      <div style="font-size:10px; color:#888; text-transform:uppercase; margin-bottom:6px;">COACH</div>
-      <div id="coach-msg" style="font-size:13px; color:#d1d1d6;">—</div>
-    </div>
-
-    <div class="card"><canvas id="chart" height="150"></canvas></div>
-    <div class="card" id="history-list"></div>
-  </div>
-
-  <nav class="tab-bar">
-    <button class="tab-btn active" onclick="switchTab('dash', event)">DASHBOARD</button>
-    <button class="tab-btn" onclick="switchTab('stats', event)">ANÁLISIS</button>
-  </nav>
+    <nav class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('dash')">DASHBOARD</button>
+        <button class="tab-btn" onclick="switchTab('stats')">ANÁLISIS</button>
+    </nav>
 
 </body>
 </html>
+ 

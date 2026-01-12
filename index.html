@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BioHacker Dashboard Stable</title>
+    <title>BioHacker Dashboard Pro Fixed</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -25,121 +25,125 @@
         const styles = `
             :root { --primary: #0a84ff; --bg: #000; --card: #1c1c1e; --text: #fff; --accent: #30d158; --warning: #ffd60a; --danger: #ff453a; }
             body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; padding-bottom: 120px; }
-            
-            /* Estructura Base */
             .card { background: var(--card); padding: 18px; border-radius: 20px; margin-bottom: 15px; border: 1px solid #2c2c2e; position: relative; }
-            .section-dynamic { display: none; } /* Oculto por defecto hasta que JS decida */
-            .section-dynamic.active { display: block; animation: fadeIn 0.5s; }
-
-            /* Stats */
+            
             .grid-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
             .stat-box { background: #2c2c2e; padding: 15px; border-radius: 15px; text-align: center; border: 1px solid #3a3a3c; }
             .stat-value { font-size: 24px; font-weight: 800; color: var(--text); }
-            .stat-label { font-size: 10px; text-transform: uppercase; color: #8e8e93; }
-            
-            /* Week Dots */
+            .stat-label { font-size: 10px; text-transform: uppercase; color: #8e8e93; letter-spacing: 0.5px; }
+            .one-rm { color: var(--accent); }
+
             .week-container { display: flex; justify-content: space-between; align-items: center; background: #1c1c1e; padding: 15px; border-radius: 20px; margin-bottom: 20px; border: 1px solid #3a3a3c; }
-            .dot { width: 10px; height: 10px; border-radius: 50%; background: #3a3a3c; margin-right: 5px; display: inline-block; }
-            .dot.active { background: var(--accent); box-shadow: 0 0 5px var(--accent); }
+            .week-dots { display: flex; gap: 8px; }
+            .dot { width: 10px; height: 10px; border-radius: 50%; background: #3a3a3c; transition: all 0.3s ease; }
+            .dot.active { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
 
-            /* Inputs & Botones */
-            .btn-main { width: 100%; background: var(--primary); color: #fff; border: none; padding: 16px; border-radius: 14px; font-size: 16px; font-weight: 700; margin-top: 10px; cursor: pointer; }
-            input, select { width: 100%; padding: 14px; border-radius: 12px; background: #121212; color: #fff; border: 1px solid #3a3a3c; margin-top: 8px; box-sizing: border-box; font-size: 16px; }
+            .checklist-item { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #2c2c2e; cursor: pointer; }
+            .checklist-item:last-child { border-bottom: none; }
+            .cb-custom { width: 22px; height: 22px; border: 2px solid #8e8e93; border-radius: 6px; margin-right: 15px; display: flex; align-items: center; justify-content: center; }
+            .checked .cb-custom { background: var(--primary); border-color: var(--primary); }
+            .checked .cb-custom::after { content: '✓'; color: white; font-size: 14px; }
+
+            .btn-main { width: 100%; background: var(--primary); color: #fff; border: none; padding: 16px; border-radius: 14px; font-size: 16px; font-weight: 700; margin-top: 10px; }
+            .timer-btns { display: flex; gap: 10px; margin-top: 10px; }
+            .timer-btns button { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid var(--primary); background: rgba(10, 132, 255, 0.1); color: var(--primary); font-weight: 600; }
             
-            /* Trekking Especial */
-            .trekking-mode { border: 1px solid var(--warning); background: rgba(255, 214, 10, 0.1); color: #ffd60a; }
-
-            /* Tabs */
+            .trekking-card { background: rgba(255, 214, 10, 0.1); border: 1px solid var(--warning); color: #ffd60a; padding: 20px; border-radius: 20px; margin-bottom: 15px; }
+            
             .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(28,28,30,0.95); backdrop-filter: blur(20px); display: flex; padding: 15px; border-top: 0.5px solid #3a3a3c; z-index: 999; }
             .tab-btn { flex: 1; background: none; border: none; color: #8e8e93; font-size: 10px; font-weight: 600; }
             .tab-btn.active { color: var(--primary); }
-            .hidden { display: none !important; }
-
-            /* Animación */
-            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-            
-            /* Checklist */
-            .checklist-item { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #2c2c2e; }
-            .cb { width: 20px; height: 20px; border: 2px solid #8e8e93; border-radius: 5px; margin-right: 10px; }
-            .checked .cb { background: var(--primary); border-color: var(--primary); }
+            .hidden { display: none; }
+            select, input { width: 100%; padding: 14px; border-radius: 12px; background: #2c2c2e; color: #fff; border: 1px solid #3a3a3c; margin-top: 8px; box-sizing: border-box; font-size: 16px; }
         `;
         const styleSheet = document.createElement("style"); styleSheet.innerText = styles; document.head.appendChild(styleSheet);
 
-        // --- VARIABLES ---
+        // --- LÓGICA ---
         let level = 1, reps = 10, weight = 72;
-        let suggestedType = "Fuerza"; 
+        let suggestedType = "Fuerza";
         let timerInt, timeLeft;
 
         window.initApp = async () => {
+            const day = new Date().getDay();
+            const isWeekend = (day === 0 || day === 6);
             loadBioChecks();
 
-            // 1. Cargar Stats y 1RM
-            onSnapshot(doc(db, "userStats", "global"), (docSnap) => {
-                if(docSnap.exists()) {
-                    const d = docSnap.data();
+            // 1. Estadísticas Globales
+            onSnapshot(doc(db, "userStats", "global"), (doc) => {
+                if(doc.exists()) {
+                    const d = doc.data();
                     level = d.level || 1; reps = d.reps || 10; weight = d.weight || 72;
-                    
                     document.getElementById('lvl-val').innerText = level;
                     document.getElementById('weight-val').innerText = weight + "kg";
-                    document.getElementById('input-weight').value = weight;
-                    
-                    // 1RM Estimado
+                    document.getElementById('weight-input').value = weight;
+                    // Cálculo 1RM estimado
                     const oneRM = Math.round(weight * (1 + (reps / 30)));
                     document.getElementById('rm-val').innerText = oneRM + "kg";
                 }
             });
 
-            // 2. Cargar Historial y Lógica de Día
+            // 2. Historial de Entrenamientos
             onSnapshot(query(collection(db, "workouts"), orderBy("date", "desc"), limit(20)), (snapshot) => {
                 const logs = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
-                
-                // Renderizar Historial y Gráfica
+                calculateWeeklyProgress(logs);
                 renderHistory(logs);
                 updateChart(logs);
-                renderWeekProgress(logs);
-
-                // Determinar Contexto (Fuerza vs Trekking)
-                const day = new Date().getDay();
-                const isWeekend = (day === 0 || day === 6);
-                
-                // LÓGICA DE VISUALIZACIÓN
-                if (isWeekend) {
-                    // ES FIN DE SEMANA:
-                    suggestedType = "Trekking";
-                    document.getElementById('panel-weekday').classList.remove('active');
-                    document.getElementById('panel-weekend').classList.add('active');
-                    
-                    // Calcular Agua
-                    const w = parseFloat(document.getElementById('input-weight').value) || 72;
-                    document.getElementById('trek-water').innerText = (w * 0.035).toFixed(1) + " L";
-
-                } else {
-                    // ES ENTRE SEMANA:
-                    document.getElementById('panel-weekend').classList.remove('active');
-                    document.getElementById('panel-weekday').classList.add('active');
-                    
-                    // Alternancia Fuerza/Cardio
-                    if (logs.length > 0 && logs[0].type.includes("Fuerza")) {
-                        suggestedType = "Zona 2 (Cardio)";
-                        document.getElementById('gym-instruction').innerText = "🏃 Objetivo: Cardio Suave (45min)";
-                    } else {
-                        suggestedType = "Fuerza";
-                        document.getElementById('gym-instruction').innerText = "🏋️ Objetivo: Rutina de Fuerza";
-                    }
-                }
-                
-                // Título Global
-                document.getElementById('global-title').innerText = suggestedType;
+                determineContext(logs, isWeekend);
             });
         };
 
-        // --- FUNCIONES DEL USUARIO ---
-        
-        window.saveSession = async () => {
-            const rpe = document.getElementById('input-rpe').value;
-            const w = document.getElementById('input-weight').value;
+        function calculateWeeklyProgress(logs) {
+            const now = new Date();
+            const dayOfWeek = now.getDay() || 7; 
+            const monday = new Date(now);
+            monday.setDate(now.getDate() - dayOfWeek + 1);
+            monday.setHours(0,0,0,0);
+
+            const thisWeekLogs = logs.filter(l => new Date(l.date) >= monday);
+            const count = thisWeekLogs.length;
+
+            let dotsHTML = '';
+            for(let i=0; i<5; i++) dotsHTML += `<div class="dot ${i < count ? 'active' : ''}"></div>`;
+            document.getElementById('week-dots').innerHTML = dotsHTML;
+            document.getElementById('week-count').innerText = `${count}/5 Sesiones`;
+        }
+
+        function determineContext(logs, isWeekend) {
+            const uiFuerza = document.getElementById('ui-fuerza');
+            const uiTrekking = document.getElementById('ui-trekking');
             
-            if(!rpe || !w) return alert("Por favor, rellena Peso y RPE.");
+            if (isWeekend) {
+                suggestedType = "Trekking";
+                uiFuerza.classList.add('hidden');
+                uiTrekking.classList.remove('hidden');
+                
+                // Calculadora Agua Montaña
+                const w = parseFloat(document.getElementById('weight-input').value) || 72;
+                document.getElementById('trek-water').innerText = (w * 0.035).toFixed(1) + " L";
+            } else {
+                uiTrekking.classList.add('hidden');
+                uiFuerza.classList.remove('hidden');
+                
+                if (logs.length > 0 && logs[0].type.includes("Fuerza")) {
+                    suggestedType = "Zona 2 (Cardio)";
+                    document.getElementById('fuerza-gallery').innerHTML = `<div style="text-align:center; padding:20px; color:#8e8e93; border:1px dashed #444; border-radius:10px;">🏃 Cardio Suave 45min<br>Mantén 120-135 ppm</div>`;
+                } else {
+                    suggestedType = "Fuerza";
+                    document.getElementById('fuerza-gallery').innerHTML = `
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                            <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHY5OXJmYndicGZsc281bm95bjZ6eXp6eXp6eXp6eXp6eXp6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKuylOmScgBA6wE/giphy.gif" style="width:100%; border-radius:10px;">
+                            <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHY5OXJmYndicGZsc281bm95bjZ6eXp6eXp6eXp6eXp6eXp6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKv6lS8LSFumJmE/giphy.gif" style="width:100%; border-radius:10px;">
+                        </div>`;
+                }
+            }
+            document.getElementById('today-title').innerText = "Hoy: " + suggestedType;
+        }
+
+        // --- CORE: GUARDADO (Siempre disponible) ---
+        window.saveSession = async () => {
+            const rpe = document.getElementById('rpe-input').value;
+            const curW = document.getElementById('weight-input').value;
+            if(!rpe || !curW) return alert("Por favor indica Peso y RPE");
 
             const btn = document.getElementById('btn-save');
             btn.innerText = "Guardando..."; btn.disabled = true;
@@ -147,38 +151,57 @@
             await addDoc(collection(db, "workouts"), {
                 date: new Date().toISOString(),
                 rpe: parseInt(rpe),
-                weight: parseFloat(w),
+                weight: parseFloat(curW),
                 type: suggestedType
             });
 
-            // Actualizar Peso y Nivel si corresponde
-            let updateData = { weight: parseFloat(w) };
+            // Actualizar Stats
+            let updateData = { weight: parseFloat(curW) };
             if(suggestedType === "Fuerza" && rpe <= 6) {
                 reps++; if(reps > 15) { reps = 10; level++; }
                 updateData.level = level; updateData.reps = reps;
             }
             await setDoc(doc(db, "userStats", "global"), updateData, {merge: true});
-
-            alert("¡Guardado!");
+            
+            alert("¡Entrenamiento Guardado!");
             location.reload();
         };
 
-        // --- UTILS (Timer, Check, Delete) ---
-        window.startTimer = (s) => {
-            clearInterval(timerInt); timeLeft = s;
-            const display = document.getElementById('timer-val');
-            timerInt = setInterval(() => {
-                timeLeft--;
-                const m = Math.floor(timeLeft/60); const sec = timeLeft%60;
-                display.innerText = `${m}:${sec.toString().padStart(2,'0')}`;
-                if(timeLeft<=0) { clearInterval(timerInt); navigator.vibrate(200); }
-            }, 1000);
-        };
+        // --- GRÁFICA ---
+        let chartInstance = null;
+        function updateChart(logs) {
+            const ctx = document.getElementById('growthChart').getContext('2d');
+            const data = [...logs].reverse();
+            if(chartInstance) chartInstance.destroy();
+            
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(l => new Date(l.date).toLocaleDateString(undefined, {day:'numeric', month:'short'})),
+                    datasets: [{
+                        label: 'Esfuerzo (RPE)',
+                        data: data.map(l => l.rpe),
+                        borderColor: '#0a84ff',
+                        backgroundColor: 'rgba(10, 132, 255, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    plugins: { legend: { display: false } },
+                    scales: { 
+                        x: { grid: { display:false }, ticks: { color:'#8e8e93', font:{size:10} } },
+                        y: { display:false, min: 0, max: 10 }
+                    },
+                    elements: { point: { radius: 3, backgroundColor: '#0a84ff' } }
+                }
+            });
+        }
 
+        // --- UTILIDADES ---
         window.toggleCheck = (id) => {
             const el = document.getElementById(id);
             el.classList.toggle('checked');
-            // Guardar en LocalStorage
             const data = JSON.parse(localStorage.getItem('bioChecks') || '{}');
             const today = new Date().toLocaleDateString();
             if(!data[today]) data[today] = {};
@@ -190,55 +213,46 @@
             const today = new Date().toLocaleDateString();
             const data = JSON.parse(localStorage.getItem('bioChecks') || '{}');
             if(data[today]) {
-                if(data[today]['c1']) document.getElementById('c1').classList.add('checked');
-                if(data[today]['c2']) document.getElementById('c2').classList.add('checked');
-                if(data[today]['c3']) document.getElementById('c3').classList.add('checked');
+                if(data[today]['check-creat']) document.getElementById('check-creat').classList.add('checked');
+                if(data[today]['check-sleep']) document.getElementById('check-sleep').classList.add('checked');
+                if(data[today]['check-sun']) document.getElementById('check-sun').classList.add('checked');
             }
         }
 
-        function renderWeekProgress(logs) {
-            const now = new Date();
-            const day = now.getDay() || 7; 
-            const monday = new Date(now); monday.setDate(now.getDate() - day + 1); monday.setHours(0,0,0,0);
-            
-            const count = logs.filter(l => new Date(l.date) >= monday).length;
-            document.getElementById('week-dots').innerHTML = Array(5).fill(0).map((_,i) => 
-                `<span class="dot ${i<count?'active':''}"></span>`
-            ).join('');
-            document.getElementById('week-text').innerText = `${count}/5 Sesiones`;
-        }
+        window.startTimer = (s) => {
+            clearInterval(timerInt); timeLeft = s;
+            const display = document.getElementById('timer-val');
+            timerInt = setInterval(() => {
+                timeLeft--;
+                const m = Math.floor(timeLeft/60); const sec = timeLeft%60;
+                display.innerText = `${m}:${sec.toString().padStart(2,'0')}`;
+                if(timeLeft<=0) { clearInterval(timerInt); navigator.vibrate([200,100,200]); }
+            }, 1000);
+        };
+
+        window.deleteLog = async (id) => { if(confirm("¿Borrar?")) await deleteDoc(doc(db, "workouts", id)); };
+        
+        window.editLog = async (id, oldRpe) => {
+            const n = prompt("Nuevo RPE:", oldRpe);
+            if(n) await updateDoc(doc(db, "workouts", id), { rpe: parseInt(n) });
+        };
 
         function renderHistory(logs) {
-            document.getElementById('history-list').innerHTML = logs.map(l => `
-                <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #333; font-size:13px;">
-                    <div><b>${l.type}</b><br><span style="color:#888">${new Date(l.date).toLocaleDateString()} · RPE ${l.rpe}</span></div>
-                    <button onclick="deleteLog('${l.id}')" style="background:none; border:1px solid #ff453a; color:#ff453a; border-radius:5px;">X</button>
+            document.getElementById('history-cont').innerHTML = logs.map(l => `
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #2c2c2e; padding:12px 0; font-size:13px;">
+                    <div><b style="color:#fff">${l.type}</b><br><span style="color:#8e8e93">${new Date(l.date).toLocaleDateString()} · RPE ${l.rpe}</span></div>
+                    <div>
+                        <button onclick="editLog('${l.id}', ${l.rpe})" style="background:#333; color:white; border:none; border-radius:5px; padding:4px 8px;">Edit</button>
+                        <button onclick="deleteLog('${l.id}')" style="background:none; border:1px solid #ff453a; color:#ff453a; border-radius:5px; padding:4px 8px;">X</button>
+                    </div>
                 </div>
             `).join('');
         }
-        
-        window.deleteLog = async(id) => { if(confirm("¿Borrar?")) await deleteDoc(doc(db,"workouts",id)); };
 
-        // Gráfica Simple
-        let chartInstance;
-        function updateChart(logs) {
-            const ctx = document.getElementById('chart').getContext('2d');
-            const data = [...logs].reverse();
-            if(chartInstance) chartInstance.destroy();
-            chartInstance = new Chart(ctx, {
-                type: 'line',
-                 {
-                    labels: data.map(l => new Date(l.date).getDate()),
-                    datasets: [{ label:'RPE',  data.map(l=>l.rpe), borderColor:'#0a84ff', tension:0.3 }]
-                },
-                options: { plugins:{legend:{display:false}}, scales:{x:{display:false}, y:{display:false}} }
-            });
-        }
-
-        window.switchTab = (t) => {
-            document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));
-            document.getElementById('p-'+t).classList.remove('hidden');
-            document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+        window.switchTab = (tab) => {
+            document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('page-' + tab).classList.remove('hidden');
             event.currentTarget.classList.add('active');
         };
 
@@ -247,14 +261,13 @@
 </head>
 <body>
 
-    <div id="p-dash" class="page">
-        
+    <div id="page-train" class="page">
         <div class="week-container">
             <div>
-                <div style="font-size:10px; color:#888;">SEMANA ACTUAL</div>
-                <div id="week-text" style="font-weight:bold;">0/5 Sesiones</div>
+                <div style="font-size:11px; color:#8e8e93;">SEMANA ACTUAL</div>
+                <div id="week-count" style="font-weight:bold;">0/5 Sesiones</div>
             </div>
-            <div id="week-dots"></div>
+            <div class="week-dots" id="week-dots"></div>
         </div>
 
         <div class="grid-stats">
@@ -263,64 +276,71 @@
                 <div class="stat-label">Nivel</div>
             </div>
             <div class="stat-box">
-                <div class="stat-value" style="color:var(--accent)" id="rm-val">-</div>
+                <div class="stat-value one-rm" id="rm-val">-</div>
                 <div class="stat-label">1RM Est.</div>
             </div>
         </div>
 
-        <h2 id="global-title" style="margin:10px 0;">Cargando...</h2>
+        <h2 id="today-title" style="margin:10px 0;">Cargando...</h2>
 
-        <div id="panel-weekend" class="card trekking-mode section-dynamic">
-            <h3 style="margin:0;">🏔️ Modo Montaña</h3>
-            <p>Hidratación sugerida: <b id="trek-water">--</b></p>
-            <div style="font-size:12px; margin-top:5px; border-top:1px solid var(--warning); padding-top:5px;">
-                🥤 <b>Isotónico:</b> Agua + Limón + Sal + Miel.
+        <div id="ui-trekking" class="trekking-card hidden">
+            <h3 style="margin:0 0 5px 0;">🏔️ Modo Montaña</h3>
+            <p style="margin:0; font-size:14px;">Objetivo Hidratación: <b id="trek-water">--</b></p>
+            <div style="margin-top:10px; font-size:12px; color:rgba(255,255,255,0.7);">
+                *Recuerda llevar tu isotónico casero y frutos secos.
             </div>
         </div>
 
-        <div id="panel-weekday" class="card section-dynamic">
-            <h3 style="margin:0;" id="gym-instruction">Entrenamiento</h3>
-            <div style="display:flex; justify-content:space-between; margin-top:15px; align-items:center;">
-                <span id="timer-val" style="font-size:24px; font-family:monospace; color:var(--primary);">0:00</span>
-                <div style="display:flex; gap:5px;">
-                    <button onclick="startTimer(60)" style="background:#333; color:#fff; border:none; padding:5px 10px; border-radius:5px;">1'</button>
-                    <button onclick="startTimer(90)" style="background:#333; color:#fff; border:none; padding:5px 10px; border-radius:5px;">1.5'</button>
-                </div>
+        <div id="ui-fuerza" class="card hidden">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span>Cronómetro</span>
+                <span id="timer-val" style="font-family:monospace; font-size:20px; color:var(--primary);">0:00</span>
             </div>
+            <div class="timer-btns">
+                <button onclick="startTimer(60)">1:00</button>
+                <button onclick="startTimer(90)">1:30</button>
+                <button onclick="startTimer(120)">2:00</button>
+            </div>
+            <div id="fuerza-gallery" style="margin-top:15px;"></div>
         </div>
 
-        <div class="card" style="border: 1px solid var(--primary);">
-            <div style="font-size:10px; color:#888; text-transform:uppercase; margin-bottom:5px;">Registrar Actividad</div>
-            <input type="number" id="input-weight" step="0.1" placeholder="Peso (kg)">
-            <select id="input-rpe">
+        <div class="card" style="border-color: var(--primary);">
+            <div style="font-size:11px; color:#8e8e93; text-transform:uppercase; margin-bottom:5px;">Registrar Sesión</div>
+            <input type="number" id="weight-input" step="0.1" placeholder="Peso corporal (kg)">
+            <select id="rpe-input">
                 <option value="">Nivel de Esfuerzo (RPE)</option>
                 <option value="6">6 - Cómodo</option>
                 <option value="7">7 - Óptimo</option>
                 <option value="8">8 - Duro</option>
                 <option value="9">9 - Máximo</option>
             </select>
-            <button id="btn-save" class="btn-main" onclick="saveSession()">REGISTRAR SESIÓN</button>
+            <button id="btn-save" class="btn-main" onclick="saveSession()">GUARDAR DATOS</button>
         </div>
 
         <div class="card">
-            <div class="checklist-item" id="c1" onclick="toggleCheck('c1')"><div class="cb"></div>Creatina</div>
-            <div class="checklist-item" id="c2" onclick="toggleCheck('c2')"><div class="cb"></div>+7h Sueño</div>
-            <div class="checklist-item" id="c3" onclick="toggleCheck('c3')"><div class="cb"></div>Sol / Naturaleza</div>
+            <div class="checklist-item" id="check-creat" onclick="toggleCheck('check-creat')">
+                <div class="cb-custom"></div><div>Creatina / Magnesio</div>
+            </div>
+            <div class="checklist-item" id="check-sleep" onclick="toggleCheck('check-sleep')">
+                <div class="cb-custom"></div><div>+7h Sueño</div>
+            </div>
+            <div class="checklist-item" id="check-sun" onclick="toggleCheck('check-sun')">
+                <div class="cb-custom"></div><div>Luz Natural</div>
+            </div>
         </div>
-
     </div>
 
-    <div id="p-stats" class="page hidden">
+    <div id="page-history" class="page hidden">
         <h1>Análisis</h1>
-        <div class="card"><canvas id="chart" height="150"></canvas></div>
-        <div class="card" id="history-list"></div>
+        <div class="card">
+            <canvas id="growthChart" height="150"></canvas>
+        </div>
+        <div class="card" id="history-cont"></div>
     </div>
 
     <nav class="tab-bar">
-        <button class="tab-btn active" onclick="switchTab('dash')">DASHBOARD</button>
-        <button class="tab-btn" onclick="switchTab('stats')">ANÁLISIS</button>
+        <button class="tab-btn active" onclick="switchTab('train')">DASHBOARD</button>
+        <button class="tab-btn" onclick="switchTab('history')">ANÁLISIS</button>
     </nav>
-
 </body>
 </html>
- 

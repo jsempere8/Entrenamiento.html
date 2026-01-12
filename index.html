@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BioHacker v8 Final</title>
+    <title>BioHacker AI Coach</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, collection, query, orderBy, limit, onSnapshot, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, onSnapshot, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyD1xdMdcbHXgGAL008bdmq22SNgLVcC9jM",
@@ -21,231 +21,203 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- LISTA DE EJERCICIOS (Básicos) ---
-        const exercisesList = [
-            { name: "Flexiones", img: "https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?auto=format&fit=crop&w=400&q=80" },
-            { name: "Sentadillas", img: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&w=400&q=80" },
-            { name: "Plancha Abd.", img: "https://images.unsplash.com/photo-1566241440091-ec10de8db2e1?auto=format&fit=crop&w=400&q=80" }
-        ];
+        // --- BASE DE DATOS DE EJERCICIOS ---
+        const EXERCISES = {
+            pushups: { name: "Flexiones", img: "https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?w=400&q=80" },
+            squats: { name: "Sentadillas", img: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=400&q=80" },
+            lunges: { name: "Zancadas", img: "https://images.unsplash.com/photo-1434608519344-49d77a699ded?w=400&q=80" },
+            plank: { name: "Plancha Abd.", img: "https://plus.unsplash.com/premium_photo-1672046218038-f86a978f85f3?w=400&q=80" },
+            burpees: { name: "Burpees", img: "https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?w=400&q=80" }, // Reusando img similar
+            row: { name: "Remo (o Dominada)", img: "https://images.unsplash.com/photo-1598289431512-b97b0917affc?w=400&q=80" }
+        };
+
+        // --- RUTINAS SEMANALES ---
+        const SCHEDULE = {
+            1: { type: "Torso", keys: ["pushups", "row", "plank"] }, // Lunes
+            2: { type: "Cardio", keys: [] }, // Martes
+            3: { type: "Pierna", keys: ["squats", "lunges", "plank"] }, // Miércoles
+            4: { type: "Cardio", keys: [] }, // Jueves
+            5: { type: "Full Body", keys: ["burpees", "squats", "pushups"] }, // Viernes
+            6: { type: "Trekking", keys: [] }, // Sábado
+            0: { type: "Trekking", keys: [] }  // Domingo
+        };
 
         // --- ESTILOS ---
         const styles = `
             :root { --primary: #0a84ff; --bg: #000; --card: #1c1c1e; --text: #fff; --accent: #32d74b; --warning: #ffd60a; }
-            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; padding-bottom: 100px; -webkit-tap-highlight-color: transparent; }
+            body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; padding-bottom: 100px; }
             
-            h2, h3 { margin: 0; font-weight: 700; }
-            .card { background: var(--card); padding: 20px; border-radius: 20px; margin-bottom: 15px; border: 1px solid #2c2c2e; overflow: hidden; }
+            /* UI Elements */
+            .card { background: var(--card); padding: 20px; border-radius: 20px; margin-bottom: 15px; border: 1px solid #2c2c2e; }
+            h2, h3 { margin: 0; }
             
-            /* Header Semana */
-            .week-container { display: flex; justify-content: space-between; align-items: center; background: #1c1c1e; padding: 15px; border-radius: 18px; margin-bottom: 20px; border: 1px solid #3a3a3c; }
-            .dot { width: 10px; height: 10px; border-radius: 50%; background: #3a3a3c; margin-left: 5px; display: inline-block; }
-            .dot.active { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
-
             /* Stats */
             .grid-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
             .stat-box { background: #2c2c2e; padding: 15px; border-radius: 15px; text-align: center; }
-            .stat-num { font-size: 24px; font-weight: 800; display: block; }
-            .stat-lbl { font-size: 10px; text-transform: uppercase; color: #8e8e93; letter-spacing: 1px; }
+            .stat-val { font-size: 24px; font-weight: 800; }
+            .stat-lbl { font-size: 10px; color: #888; text-transform: uppercase; }
 
-            /* Galería Ejercicios */
-            .ex-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 15px; }
-            .ex-item { position: relative; border-radius: 10px; overflow: hidden; aspect-ratio: 1/1; }
-            .ex-item img { width: 100%; height: 100%; object-fit: cover; opacity: 0.7; }
-            .ex-name { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); font-size: 9px; padding: 4px; text-align: center; }
-
+            /* Exercise List */
+            .ex-card { display: flex; align-items: center; background: #2c2c2e; margin-bottom: 10px; border-radius: 12px; overflow: hidden; padding-right: 15px; }
+            .ex-img { width: 80px; height: 80px; object-fit: cover; margin-right: 15px; }
+            .ex-info { flex: 1; }
+            .ex-name { font-weight: bold; font-size: 15px; margin-bottom: 4px; }
+            .ex-meta { font-size: 13px; color: var(--accent); }
+            
             /* Inputs */
-            .input-group { margin-top: 10px; }
-            input, select { width: 100%; padding: 14px; background: #000; border: 1px solid #3a3a3c; color: #fff; border-radius: 12px; margin-bottom: 10px; box-sizing: border-box; font-size: 16px; }
-            .btn-save { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 12px; font-weight: bold; font-size: 16px; cursor: pointer; }
+            select, input { width: 100%; padding: 14px; background: #000; border: 1px solid #333; color: white; border-radius: 10px; margin-top: 10px; font-size: 16px; box-sizing: border-box;}
+            .btn-save { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 12px; font-weight: bold; font-size: 16px; margin-top: 15px; }
 
-            /* Timer */
-            .timer-box { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-            .timer-val { font-family: 'Courier New', monospace; font-size: 28px; color: var(--primary); font-weight: bold; }
-            .timer-controls button { background: #333; color: white; border: none; padding: 8px 12px; border-radius: 8px; font-size: 12px; margin-left: 5px; }
+            /* Trekking Card */
+            .trek-card { background: rgba(255, 214, 10, 0.1); border: 1px solid var(--warning); color: var(--warning); padding: 20px; border-radius: 20px; text-align: center; }
 
-            /* Tabs */
-            .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(28,28,30,0.95); backdrop-filter: blur(10px); display: flex; padding: 15px; border-top: 1px solid #333; z-index: 100; }
-            .tab-btn { flex: 1; background: none; border: none; color: #666; font-size: 11px; font-weight: 700; }
-            .tab-btn.active { color: var(--primary); }
             .hidden { display: none; }
+            .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(28,28,30,0.95); display: flex; padding: 15px; border-top: 1px solid #333; }
+            .tab-btn { flex: 1; background: none; border: none; color: #666; font-weight: 700; }
+            .tab-btn.active { color: var(--primary); }
         `;
         const styleSheet = document.createElement("style"); styleSheet.innerText = styles; document.head.appendChild(styleSheet);
 
-        // --- LÓGICA ---
-        let level = 1, weight = 72;
-        let todayType = "Fuerza";
-        let nextDayType = "Cardio";
-        let timerInt, timeLeft;
+        // --- VARIABLES GLOBALES ---
+        let userLevel = 1; // 1 = 10 reps, 2 = 12 reps, 3 = 15 reps
+        let weight = 72;
+        let todayRoutine = {};
+        let currentReps = 10;
 
         window.initApp = async () => {
-            loadChecks();
-
-            // 1. Cargar Stats
-            onSnapshot(doc(db, "userStats", "global"), (d) => {
+            // 1. Obtener día y rutina base
+            const dayIdx = new Date().getDay();
+            todayRoutine = SCHEDULE[dayIdx];
+            
+            // 2. Cargar Stats del usuario (Nivel y Peso)
+            const statsRef = doc(db, "userStats", "global");
+            onSnapshot(statsRef, (d) => {
                 if(d.exists()) {
                     const data = d.data();
-                    level = data.level || 1; weight = data.weight || 72;
-                    document.getElementById('val-lvl').innerText = level;
-                    document.getElementById('val-rm').innerText = Math.round(weight * 1.33) + "kg"; // Estimación simple
-                    document.getElementById('inp-weight').value = weight;
+                    userLevel = data.level || 1;
+                    weight = data.weight || 72;
+                    
+                    // Lógica del Coach: Definir Reps según Nivel
+                    if(userLevel === 1) currentReps = 10;
+                    else if(userLevel === 2) currentReps = 12;
+                    else currentReps = 15;
+
+                    updateUI();
                 }
             });
 
-            // 2. Historial y Determinación del Día
-            onSnapshot(query(collection(db, "workouts"), orderBy("date", "desc"), limit(10)), (snapshot) => {
-                const logs = snapshot.docs.map(d => ({id:d.id, ...d.data()}));
-                
-                renderWeek(logs);
+            // 3. Cargar historial
+            onSnapshot(query(collection(db, "workouts"), orderBy("date", "desc"), limit(10)), (snap) => {
+                const logs = snap.docs.map(d => ({id:d.id, ...d.data()}));
                 renderHistory(logs);
                 updateChart(logs);
-                
-                // Lógica del Día y del Siguiente
-                const date = new Date();
-                const day = date.getDay();
-                const isWeekend = (day === 0 || day === 6);
-
-                if(isWeekend) {
-                    todayType = "Trekking";
-                    nextDayType = (day === 6) ? "Trekking/Descanso" : "Fuerza"; // Sábado -> Dom, Dom -> Lunes
-                } else {
-                    // Si el último entreno fue Fuerza, hoy toca Cardio
-                    if(logs.length > 0 && logs[0].type === "Fuerza") {
-                        todayType = "Zona 2";
-                        nextDayType = "Fuerza";
-                    } else {
-                        todayType = "Fuerza";
-                        nextDayType = "Zona 2";
-                    }
-                }
-
-                // Renderizar UI basada en el tipo
-                renderDailyCard();
             });
         };
 
-        function renderDailyCard() {
-            const container = document.getElementById('dynamic-card');
-            document.getElementById('title-today').innerText = todayType;
-            document.getElementById('title-next').innerText = "Mañana: " + nextDayType;
+        function updateUI() {
+            // Título
+            document.getElementById('today-title').innerText = "Hoy toca: " + todayRoutine.type;
+            document.getElementById('lvl-display').innerText = `Nivel ${userLevel}`;
+            document.getElementById('reps-display').innerText = `${currentReps} Reps`;
 
-            let contentHTML = "";
+            const container = document.getElementById('workout-container');
+            container.innerHTML = "";
 
-            if(todayType === "Fuerza") {
-                // Generar HTML de ejercicios
-                let exHTML = exercisesList.map(ex => `
-                    <div class="ex-item">
-                        <img src="${ex.img}">
-                        <div class="ex-name">${ex.name}</div>
-                    </div>
-                `).join('');
-
-                contentHTML = `
-                    <div class="timer-box">
-                        <span>Descanso</span>
-                        <span id="timer" class="timer-val">0:00</span>
-                    </div>
-                    <div class="timer-controls" style="text-align:right; margin-bottom:15px;">
-                        <button onclick="startTimer(60)">1:00</button>
-                        <button onclick="startTimer(90)">1:30</button>
-                        <button onclick="startTimer(120)">2:00</button>
-                    </div>
-                    <div style="font-size:12px; color:#888; margin-bottom:5px;">RUTINA HOY:</div>
-                    <div class="ex-grid">${exHTML}</div>
-                `;
-            } else if (todayType === "Zona 2") {
-                contentHTML = `
-                    <div style="text-align:center; padding:20px; color:#aaa;">
-                        <div style="font-size:40px; margin-bottom:10px;">🏃</div>
-                        <p>Objetivo: 45 minutos constantes.</p>
-                        <p style="font-size:12px; color:#666;">Debes poder mantener una conversación sin ahogarte.</p>
+            if (todayRoutine.type === "Trekking") {
+                // MODO MONTAÑA
+                container.innerHTML = `
+                    <div class="trek-card">
+                        <div style="font-size:40px;">🏔️</div>
+                        <h3>Día de Montaña</h3>
+                        <p>Hidratación objetivo: <b>${(weight*0.04).toFixed(1)} Litros</b></p>
+                        <div style="font-size:12px; margin-top:10px; color:rgba(255,255,255,0.7);">
+                            Disfruta de la naturaleza. Sin métricas hoy.
+                        </div>
                     </div>
                 `;
-            } else { // Trekking
-                const water = (weight * 0.04).toFixed(1);
-                contentHTML = `
-                    <div style="background:rgba(255, 214, 10, 0.1); color:#ffd60a; padding:15px; border-radius:10px; border:1px solid #ffd60a;">
-                        <h3 style="margin-bottom:5px;">⛰️ Modo Montaña</h3>
-                        <p style="margin:0; font-size:14px;">Meta Hidratación: <b>${water} Litros</b></p>
+            } else if (todayRoutine.type === "Cardio") {
+                // MODO CARDIO
+                container.innerHTML = `
+                    <div class="card" style="text-align:center;">
+                        <div style="font-size:40px;">🏃💨</div>
+                        <h3>Zona 2 Cardio</h3>
+                        <p>45 - 60 Minutos</p>
+                        <p style="font-size:12px; color:#888;">Mantén un ritmo donde puedas hablar pero te cueste un poco.</p>
                     </div>
                 `;
+            } else {
+                // MODO FUERZA (RUTINA ESPECÍFICA)
+                let html = `<div style="margin-bottom:10px; font-size:12px; color:#888;">COACH: Haz 3 series de cada ejercicio. Descansa 60s.</div>`;
+                
+                todayRoutine.keys.forEach(key => {
+                    const ex = EXERCISES[key];
+                    html += `
+                        <div class="ex-card">
+                            <img src="${ex.img}" class="ex-img">
+                            <div class="ex-info">
+                                <div class="ex-name">${ex.name}</div>
+                                <div class="ex-meta">3 Series x ${currentReps} Reps</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
             }
-            container.innerHTML = contentHTML;
         }
 
         window.saveSession = async () => {
-            const w = document.getElementById('inp-weight').value;
-            const rpe = document.getElementById('inp-rpe').value;
-            if(!w || !rpe) return alert("Faltan datos");
+            const rpe = parseInt(document.getElementById('inp-rpe').value);
+            const w = parseFloat(document.getElementById('inp-weight').value);
+            
+            if(!rpe || !w) return alert("Faltan datos");
 
-            document.getElementById('btn-save').innerText = "Guardando...";
+            document.getElementById('btn-save').innerText = "Analizando...";
+
+            // --- LÓGICA DE ENTRENADOR IA ---
+            // Si es sesión de fuerza y fue fácil (RPE <= 6), subimos nivel
+            let newLevel = userLevel;
+            let msg = "¡Datos guardados!";
+
+            if(todayRoutine.type !== "Cardio" && todayRoutine.type !== "Trekking") {
+                if(rpe <= 6) {
+                    newLevel++;
+                    msg = "¡Coach: Te he visto sobrado! Subimos la dificultad para la próxima.";
+                } else if (rpe >= 9 && userLevel > 1) {
+                    newLevel--; // Si fue RPE 9 o 10, bajamos un poco
+                    msg = "¡Coach: Vamos a bajar un poco el ritmo para recuperar.";
+                }
+            }
+
+            // Guardar Entreno
             await addDoc(collection(db, "workouts"), {
                 date: new Date().toISOString(),
-                type: todayType,
-                weight: parseFloat(w),
-                rpe: parseInt(rpe)
+                type: todayRoutine.type,
+                rpe: rpe,
+                weight: w
             });
-            
-            // Actualizar peso global
-            await setDoc(doc(db, "userStats", "global"), { weight: parseFloat(w) }, { merge: true });
-            
-            alert("¡Guardado!");
+
+            // Guardar Ajustes del Usuario (Nivel y Peso)
+            await setDoc(doc(db, "userStats", "global"), {
+                level: newLevel,
+                weight: w
+            }, { merge: true });
+
+            alert(msg);
             location.reload();
         };
 
-        // --- UTILS ---
-        window.startTimer = (s) => {
-            clearInterval(timerInt); timeLeft = s;
-            const el = document.getElementById('timer');
-            timerInt = setInterval(() => {
-                timeLeft--;
-                const m = Math.floor(timeLeft/60); const sc = timeLeft%60;
-                el.innerText = `${m}:${sc.toString().padStart(2,'0')}`;
-                if(timeLeft<=0) { clearInterval(timerInt); navigator.vibrate(200); }
-            }, 1000);
-        };
-
-        function renderWeek(logs) {
-            // Lógica simple: cuenta logs de los últimos 7 días
-            const now = new Date();
-            const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-            const count = logs.filter(l => new Date(l.date) > oneWeekAgo).length;
-            
-            let dots = "";
-            for(let i=0; i<5; i++) dots += `<span class="dot ${i<count?'active':''}"></span>`;
-            document.getElementById('week-dots').innerHTML = dots;
-            document.getElementById('week-txt').innerText = `${Math.min(count, 5)}/5 Sesiones`;
-        }
-
+        // --- RENDERING AUXILIAR ---
         function renderHistory(logs) {
             document.getElementById('hist-list').innerHTML = logs.map(l => `
                 <div style="display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid #333; font-size:13px;">
-                    <div><b style="color:white">${l.type}</b><br><span style="color:#666">${new Date(l.date).toLocaleDateString()} · RPE ${l.rpe}</span></div>
-                    <button onclick="delLog('${l.id}')" style="background:none; border:1px solid #ff453a; color:#ff453a; border-radius:4px;">X</button>
+                    <div><b>${l.type}</b><br><span style="color:#666">${new Date(l.date).toLocaleDateString()} · RPE ${l.rpe}</span></div>
+                    <button onclick="deleteLog('${l.id}')" style="color:#ff453a; background:none; border:none;">✕</button>
                 </div>
             `).join('');
         }
-        window.delLog = async(id) => { if(confirm("¿Borrar?")) await deleteDoc(doc(db,"workouts",id)); };
+        
+        window.deleteLog = async(id) => { if(confirm("¿Borrar?")) await deleteDoc(doc(db,"workouts",id)); };
 
-        // Checks
-        window.toggleCheck = (id) => {
-            const el = document.getElementById(id);
-            el.classList.toggle('checked');
-            const data = JSON.parse(localStorage.getItem('bioChecks') || '{}');
-            const k = new Date().toLocaleDateString();
-            if(!data[k]) data[k]={};
-            data[k][id] = el.classList.contains('checked');
-            localStorage.setItem('bioChecks', JSON.stringify(data));
-        };
-        function loadChecks(){
-            const data = JSON.parse(localStorage.getItem('bioChecks') || '{}');
-            const k = new Date().toLocaleDateString();
-            if(data[k]) {
-                if(data[k]['c1']) document.getElementById('c1').classList.add('checked');
-                if(data[k]['c2']) document.getElementById('c2').classList.add('checked');
-            }
-        }
-
-        // Gráfica Simple
         let chartInstance;
         function updateChart(logs) {
             const ctx = document.getElementById('chart').getContext('2d');
@@ -255,7 +227,7 @@
                 type: 'line',
                 data: {
                     labels: data.map(l => new Date(l.date).getDate()),
-                    datasets: [{ label:'RPE', data: data.map(l=>l.rpe), borderColor:'#0a84ff', tension:0.4, pointRadius:2 }]
+                    datasets: [{ label:'RPE', data: data.map(l=>l.rpe), borderColor:'#0a84ff', tension:0.4 }]
                 },
                 options: { plugins:{legend:{display:false}}, scales:{x:{display:false}, y:{display:false}} }
             });
@@ -270,72 +242,50 @@
 
         window.addEventListener('load', initApp);
     </script>
-    <style>
-        .checklist-item { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #333; }
-        .cb { width: 20px; height: 20px; border: 2px solid #666; border-radius: 6px; margin-right: 12px; }
-        .checked .cb { background: var(--primary); border-color: var(--primary); }
-    </style>
 </head>
 <body>
 
-    <div id="p-dash" class="page">
-        
-        <div class="week-container">
-            <div>
-                <div style="font-size:10px; color:#888;">ESTA SEMANA</div>
-                <div id="week-txt" style="font-weight:bold;">0/5 Sesiones</div>
-            </div>
-            <div id="week-dots"></div>
-        </div>
-
+    <div id="p-train" class="page">
         <div class="grid-stats">
             <div class="stat-box">
-                <span class="stat-num" id="val-lvl">-</span>
-                <span class="stat-lbl">Nivel</span>
+                <div class="stat-val" id="lvl-display">-</div>
+                <div class="stat-lbl">Dificultad Actual</div>
             </div>
             <div class="stat-box">
-                <span class="stat-num" style="color:var(--accent)" id="val-rm">-</span>
-                <span class="stat-lbl">1RM Est.</span>
+                <div class="stat-val" style="color:var(--accent)" id="reps-display">-</div>
+                <div class="stat-lbl">Objetivo Reps</div>
             </div>
         </div>
 
-        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:10px; padding: 0 5px;">
-            <h2 id="title-today">Cargando...</h2>
-            <span id="title-next" style="font-size:11px; color:#888;">Mañana: ...</span>
-        </div>
+        <h2 id="today-title" style="margin-bottom:15px;">Cargando Coach...</h2>
 
-        <div id="dynamic-card" class="card"></div>
+        <div id="workout-container"></div>
 
-        <div class="card" style="border-color: #333;">
-            <div style="font-size:10px; color:#888; margin-bottom:5px;">REGISTRAR SESIÓN</div>
-            <input type="number" id="inp-weight" placeholder="Peso corporal (kg)">
+        <div class="card" style="border-color: #333; margin-top:20px;">
+            <div style="font-size:10px; color:#888; margin-bottom:5px;">FEEDBACK AL COACH</div>
+            <input type="number" id="inp-weight" step="0.1" placeholder="Peso corporal (kg)">
             <select id="inp-rpe">
-                <option value="">Nivel de Esfuerzo (RPE)</option>
-                <option value="6">6 - Fácil</option>
-                <option value="7">7 - Medio</option>
-                <option value="8">8 - Duro</option>
-                <option value="9">9 - Extremo</option>
+                <option value="">¿Qué tal te ha ido? (RPE)</option>
+                <option value="5">5 - Muy Fácil (Subir nivel)</option>
+                <option value="6">6 - Fácil (Subir nivel)</option>
+                <option value="7">7 - Perfecto (Mantener)</option>
+                <option value="8">8 - Duro (Mantener)</option>
+                <option value="9">9 - Al límite (Bajar)</option>
+                <option value="10">10 - Fallo Muscular</option>
             </select>
-            <button id="btn-save" class="btn-save" onclick="saveSession()">GUARDAR DATOS</button>
-        </div>
-
-        <div class="card" style="padding:0;">
-            <div class="checklist-item" id="c1" onclick="toggleCheck('c1')"><div class="cb"></div>Creatina</div>
-            <div class="checklist-item" id="c2" onclick="toggleCheck('c2')"><div class="cb"></div>+7h Sueño</div>
+            <button id="btn-save" class="btn-save" onclick="saveSession()">FINALIZAR SESIÓN</button>
         </div>
     </div>
 
     <div id="p-anl" class="page hidden">
-        <h1>Progreso</h1>
-        <div class="card">
-            <canvas id="chart" height="120"></canvas>
-        </div>
+        <h1 style="margin-bottom:20px;">Progreso</h1>
+        <div class="card"><canvas id="chart" height="120"></canvas></div>
         <div class="card" id="hist-list"></div>
     </div>
 
     <nav class="tab-bar">
-        <button class="tab-btn active" onclick="switchTab('dash')">ENTRENO</button>
-        <button class="tab-btn" onclick="switchTab('anl')">ANÁLISIS</button>
+        <button class="tab-btn active" onclick="switchTab('train')">COACH</button>
+        <button class="tab-btn" onclick="switchTab('anl')">DATOS</button>
     </nav>
 
 </body>

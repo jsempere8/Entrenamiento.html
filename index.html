@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BioHacker AI Coach</title>
+    <title>BioHacker v10 Time Control</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -27,86 +27,94 @@
             squats: { name: "Sentadillas", img: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=400&q=80" },
             lunges: { name: "Zancadas", img: "https://images.unsplash.com/photo-1434608519344-49d77a699ded?w=400&q=80" },
             plank: { name: "Plancha Abd.", img: "https://plus.unsplash.com/premium_photo-1672046218038-f86a978f85f3?w=400&q=80" },
-            burpees: { name: "Burpees", img: "https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?w=400&q=80" }, // Reusando img similar
-            row: { name: "Remo (o Dominada)", img: "https://images.unsplash.com/photo-1598289431512-b97b0917affc?w=400&q=80" }
+            burpees: { name: "Burpees", img: "https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?w=400&q=80" },
+            row: { name: "Remo / Dominada", img: "https://images.unsplash.com/photo-1598289431512-b97b0917affc?w=400&q=80" }
         };
 
         // --- RUTINAS SEMANALES ---
         const SCHEDULE = {
-            1: { type: "Torso", keys: ["pushups", "row", "plank"] }, // Lunes
-            2: { type: "Cardio", keys: [] }, // Martes
-            3: { type: "Pierna", keys: ["squats", "lunges", "plank"] }, // Miércoles
-            4: { type: "Cardio", keys: [] }, // Jueves
-            5: { type: "Full Body", keys: ["burpees", "squats", "pushups"] }, // Viernes
-            6: { type: "Trekking", keys: [] }, // Sábado
-            0: { type: "Trekking", keys: [] }  // Domingo
+            1: { type: "Torso", keys: ["pushups", "row", "plank"] },
+            2: { type: "Cardio", keys: [] },
+            3: { type: "Pierna", keys: ["squats", "lunges", "plank"] },
+            4: { type: "Cardio", keys: [] },
+            5: { type: "Full Body", keys: ["burpees", "squats", "pushups"] },
+            6: { type: "Trekking", keys: [] },
+            0: { type: "Trekking", keys: [] }
         };
 
         // --- ESTILOS ---
         const styles = `
-            :root { --primary: #0a84ff; --bg: #000; --card: #1c1c1e; --text: #fff; --accent: #32d74b; --warning: #ffd60a; }
-            body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; padding-bottom: 100px; }
+            :root { --primary: #0a84ff; --bg: #000; --card: #1c1c1e; --text: #fff; --accent: #32d74b; --warning: #ffd60a; --danger: #ff453a; }
+            body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; padding-bottom: 100px; }
             
-            /* UI Elements */
-            .card { background: var(--card); padding: 20px; border-radius: 20px; margin-bottom: 15px; border: 1px solid #2c2c2e; }
-            h2, h3 { margin: 0; }
+            /* Header con Tiempo Global */
+            .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+            .global-timer-box { font-variant-numeric: tabular-nums; font-size: 20px; font-weight: 700; color: var(--primary); background: #1c1c1e; padding: 8px 15px; border-radius: 20px; border: 1px solid #333; }
+            .global-timer-box.active { border-color: var(--primary); animation: pulse 2s infinite; }
+            @keyframes pulse { 0% { box-shadow: 0 0 0 rgba(10,132,255,0); } 50% { box-shadow: 0 0 10px rgba(10,132,255,0.3); } 100% { box-shadow: 0 0 0 rgba(10,132,255,0); } }
+
+            /* Botón Empezar */
+            .btn-start { width: 100%; background: var(--accent); color: #000; font-weight: 900; padding: 18px; border-radius: 15px; border: none; font-size: 18px; margin-bottom: 20px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
+            
+            /* Cards */
+            .card { background: var(--card); padding: 18px; border-radius: 20px; margin-bottom: 15px; border: 1px solid #2c2c2e; }
             
             /* Stats */
             .grid-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-            .stat-box { background: #2c2c2e; padding: 15px; border-radius: 15px; text-align: center; }
-            .stat-val { font-size: 24px; font-weight: 800; }
-            .stat-lbl { font-size: 10px; color: #888; text-transform: uppercase; }
+            .stat-box { background: #2c2c2e; padding: 12px; border-radius: 15px; text-align: center; }
+            .stat-val { font-size: 22px; font-weight: 800; }
+            .stat-lbl { font-size: 9px; color: #888; text-transform: uppercase; }
 
-            /* Exercise List */
-            .ex-card { display: flex; align-items: center; background: #2c2c2e; margin-bottom: 10px; border-radius: 12px; overflow: hidden; padding-right: 15px; }
-            .ex-img { width: 80px; height: 80px; object-fit: cover; margin-right: 15px; }
+            /* Ejercicios */
+            .ex-card { display: flex; align-items: center; background: #222; margin-bottom: 10px; border-radius: 12px; overflow: hidden; padding-right: 15px; border: 1px solid #333; }
+            .ex-img { width: 70px; height: 70px; object-fit: cover; margin-right: 15px; }
             .ex-info { flex: 1; }
-            .ex-name { font-weight: bold; font-size: 15px; margin-bottom: 4px; }
-            .ex-meta { font-size: 13px; color: var(--accent); }
-            
-            /* Inputs */
-            select, input { width: 100%; padding: 14px; background: #000; border: 1px solid #333; color: white; border-radius: 10px; margin-top: 10px; font-size: 16px; box-sizing: border-box;}
-            .btn-save { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 12px; font-weight: bold; font-size: 16px; margin-top: 15px; }
+            .ex-meta { font-size: 13px; color: var(--accent); margin-top: 3px; }
 
-            /* Trekking Card */
-            .trek-card { background: rgba(255, 214, 10, 0.1); border: 1px solid var(--warning); color: var(--warning); padding: 20px; border-radius: 20px; text-align: center; }
+            /* Timer Descanso */
+            .rest-timer-ui { display: flex; justify-content: space-between; align-items: center; background: #000; padding: 10px; border-radius: 10px; margin-bottom: 15px; border: 1px dashed #444; }
+            .rest-val { font-family: monospace; font-size: 24px; color: #fff; }
+            .rest-btns button { background: #333; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; margin-left: 5px; font-size: 12px; }
+
+            /* Inputs & Save */
+            select, input { width: 100%; padding: 14px; background: #000; border: 1px solid #333; color: white; border-radius: 10px; margin-top: 10px; font-size: 16px; box-sizing: border-box; }
+            .btn-save { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 12px; font-weight: bold; font-size: 16px; margin-top: 15px; }
+            .btn-save.disabled { background: #333; color: #888; }
 
             .hidden { display: none; }
-            .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(28,28,30,0.95); display: flex; padding: 15px; border-top: 1px solid #333; }
-            .tab-btn { flex: 1; background: none; border: none; color: #666; font-weight: 700; }
+            .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(28,28,30,0.95); display: flex; padding: 15px; border-top: 1px solid #333; z-index: 100; }
+            .tab-btn { flex: 1; background: none; border: none; color: #666; font-weight: 700; font-size: 11px; }
             .tab-btn.active { color: var(--primary); }
         `;
         const styleSheet = document.createElement("style"); styleSheet.innerText = styles; document.head.appendChild(styleSheet);
 
-        // --- VARIABLES GLOBALES ---
-        let userLevel = 1; // 1 = 10 reps, 2 = 12 reps, 3 = 15 reps
+        // --- VARIABLES ---
+        let userLevel = 1; 
         let weight = 72;
         let todayRoutine = {};
         let currentReps = 10;
+        
+        // Timers
+        let globalSeconds = 0;
+        let globalInterval = null;
+        let restInterval = null;
 
         window.initApp = async () => {
-            // 1. Obtener día y rutina base
             const dayIdx = new Date().getDay();
             todayRoutine = SCHEDULE[dayIdx];
             
-            // 2. Cargar Stats del usuario (Nivel y Peso)
-            const statsRef = doc(db, "userStats", "global");
-            onSnapshot(statsRef, (d) => {
+            // Cargar Datos
+            onSnapshot(doc(db, "userStats", "global"), (d) => {
                 if(d.exists()) {
                     const data = d.data();
                     userLevel = data.level || 1;
                     weight = data.weight || 72;
-                    
-                    // Lógica del Coach: Definir Reps según Nivel
-                    if(userLevel === 1) currentReps = 10;
-                    else if(userLevel === 2) currentReps = 12;
-                    else currentReps = 15;
-
+                    currentReps = userLevel === 1 ? 10 : (userLevel === 2 ? 12 : 15);
                     updateUI();
                 }
             });
 
-            // 3. Cargar historial
+            // Cargar Historial
             onSnapshot(query(collection(db, "workouts"), orderBy("date", "desc"), limit(10)), (snap) => {
                 const logs = snap.docs.map(d => ({id:d.id, ...d.data()}));
                 renderHistory(logs);
@@ -114,52 +122,77 @@
             });
         };
 
+        // --- LÓGICA DE TIEMPO ---
+        window.startWorkout = () => {
+            document.getElementById('btn-start').classList.add('hidden');
+            document.getElementById('workout-content').classList.remove('hidden');
+            document.getElementById('global-timer-box').classList.add('active');
+            
+            // Iniciar Cronómetro Global
+            if(globalInterval) clearInterval(globalInterval);
+            globalSeconds = 0;
+            globalInterval = setInterval(() => {
+                globalSeconds++;
+                const m = Math.floor(globalSeconds / 60);
+                const s = globalSeconds % 60;
+                document.getElementById('global-timer-val').innerText = 
+                    `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+            }, 1000);
+        };
+
+        window.startRest = (sec) => {
+            if(restInterval) clearInterval(restInterval);
+            let left = sec;
+            const display = document.getElementById('rest-timer-val');
+            display.style.color = "var(--primary)";
+            
+            restInterval = setInterval(() => {
+                left--;
+                const m = Math.floor(left / 60);
+                const s = left % 60;
+                display.innerText = `${m}:${s.toString().padStart(2,'0')}`;
+                
+                if(left <= 0) {
+                    clearInterval(restInterval);
+                    display.innerText = "0:00";
+                    display.style.color = "var(--accent)";
+                    navigator.vibrate([200, 100, 200]); 
+                }
+            }, 1000);
+        };
+
         function updateUI() {
-            // Título
-            document.getElementById('today-title').innerText = "Hoy toca: " + todayRoutine.type;
             document.getElementById('lvl-display').innerText = `Nivel ${userLevel}`;
             document.getElementById('reps-display').innerText = `${currentReps} Reps`;
+            document.getElementById('today-title').innerText = todayRoutine.type;
 
-            const container = document.getElementById('workout-container');
+            const container = document.getElementById('exercises-list');
             container.innerHTML = "";
 
             if (todayRoutine.type === "Trekking") {
-                // MODO MONTAÑA
+                document.getElementById('btn-start').classList.add('hidden'); // No hace falta timer en trekking
+                document.getElementById('workout-content').classList.remove('hidden');
                 container.innerHTML = `
-                    <div class="trek-card">
-                        <div style="font-size:40px;">🏔️</div>
-                        <h3>Día de Montaña</h3>
-                        <p>Hidratación objetivo: <b>${(weight*0.04).toFixed(1)} Litros</b></p>
-                        <div style="font-size:12px; margin-top:10px; color:rgba(255,255,255,0.7);">
-                            Disfruta de la naturaleza. Sin métricas hoy.
-                        </div>
-                    </div>
-                `;
+                    <div style="text-align:center; padding:20px; color:#ffd60a; border:1px solid #ffd60a; border-radius:15px; background:rgba(255,214,10,0.1);">
+                        <h1>🏔️</h1>
+                        <p>Día de Montaña</p>
+                        <p>Objetivo Hidratación: ${(weight*0.04).toFixed(1)}L</p>
+                    </div>`;
             } else if (todayRoutine.type === "Cardio") {
-                // MODO CARDIO
-                container.innerHTML = `
-                    <div class="card" style="text-align:center;">
-                        <div style="font-size:40px;">🏃💨</div>
-                        <h3>Zona 2 Cardio</h3>
-                        <p>45 - 60 Minutos</p>
-                        <p style="font-size:12px; color:#888;">Mantén un ritmo donde puedas hablar pero te cueste un poco.</p>
-                    </div>
-                `;
+                container.innerHTML = `<div style="text-align:center; padding:30px;"><h1>🏃</h1><p>45-60min Zona 2</p></div>`;
             } else {
-                // MODO FUERZA (RUTINA ESPECÍFICA)
-                let html = `<div style="margin-bottom:10px; font-size:12px; color:#888;">COACH: Haz 3 series de cada ejercicio. Descansa 60s.</div>`;
-                
+                // Rutina Fuerza
+                let html = `<div style="font-size:12px; color:#888; margin-bottom:10px;">RUTINA (${currentReps} Reps/Serie):</div>`;
                 todayRoutine.keys.forEach(key => {
                     const ex = EXERCISES[key];
                     html += `
                         <div class="ex-card">
-                            <img src="${ex.img}" class="ex-img">
+                            <img src="${ex.img}" class="ex-img" loading="lazy">
                             <div class="ex-info">
                                 <div class="ex-name">${ex.name}</div>
                                 <div class="ex-meta">3 Series x ${currentReps} Reps</div>
                             </div>
-                        </div>
-                    `;
+                        </div>`;
                 });
                 container.innerHTML = html;
             }
@@ -169,53 +202,47 @@
             const rpe = parseInt(document.getElementById('inp-rpe').value);
             const w = parseFloat(document.getElementById('inp-weight').value);
             
-            if(!rpe || !w) return alert("Faltan datos");
+            if(!rpe || !w) return alert("Por favor rellena Peso y RPE");
 
-            document.getElementById('btn-save').innerText = "Analizando...";
+            // Parar timer global
+            clearInterval(globalInterval);
+            const durationMins = Math.ceil(globalSeconds / 60);
 
-            // --- LÓGICA DE ENTRENADOR IA ---
-            // Si es sesión de fuerza y fue fácil (RPE <= 6), subimos nivel
+            document.getElementById('btn-save').innerText = "Guardando...";
+
+            // IA Coach Logic
             let newLevel = userLevel;
-            let msg = "¡Datos guardados!";
-
             if(todayRoutine.type !== "Cardio" && todayRoutine.type !== "Trekking") {
-                if(rpe <= 6) {
-                    newLevel++;
-                    msg = "¡Coach: Te he visto sobrado! Subimos la dificultad para la próxima.";
-                } else if (rpe >= 9 && userLevel > 1) {
-                    newLevel--; // Si fue RPE 9 o 10, bajamos un poco
-                    msg = "¡Coach: Vamos a bajar un poco el ritmo para recuperar.";
-                }
+                if(rpe <= 6) newLevel++;
+                else if (rpe >= 9 && userLevel > 1) newLevel--;
             }
 
-            // Guardar Entreno
             await addDoc(collection(db, "workouts"), {
                 date: new Date().toISOString(),
                 type: todayRoutine.type,
                 rpe: rpe,
-                weight: w
+                weight: w,
+                duration: durationMins // Guardamos la duración
             });
 
-            // Guardar Ajustes del Usuario (Nivel y Peso)
-            await setDoc(doc(db, "userStats", "global"), {
-                level: newLevel,
-                weight: w
-            }, { merge: true });
+            await setDoc(doc(db, "userStats", "global"), { level: newLevel, weight: w }, { merge: true });
 
-            alert(msg);
+            alert(`¡Guardado! Duración: ${durationMins} min.`);
             location.reload();
         };
 
-        // --- RENDERING AUXILIAR ---
+        // Historial y Gráfica
         function renderHistory(logs) {
             document.getElementById('hist-list').innerHTML = logs.map(l => `
                 <div style="display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid #333; font-size:13px;">
-                    <div><b>${l.type}</b><br><span style="color:#666">${new Date(l.date).toLocaleDateString()} · RPE ${l.rpe}</span></div>
+                    <div>
+                        <b>${l.type}</b>
+                        <br><span style="color:#666">${new Date(l.date).toLocaleDateString()} · ${l.duration||'?'}min · RPE ${l.rpe}</span>
+                    </div>
                     <button onclick="deleteLog('${l.id}')" style="color:#ff453a; background:none; border:none;">✕</button>
                 </div>
             `).join('');
         }
-        
         window.deleteLog = async(id) => { if(confirm("¿Borrar?")) await deleteDoc(doc(db,"workouts",id)); };
 
         let chartInstance;
@@ -246,34 +273,61 @@
 <body>
 
     <div id="p-train" class="page">
-        <div class="grid-stats">
-            <div class="stat-box">
-                <div class="stat-val" id="lvl-display">-</div>
-                <div class="stat-lbl">Dificultad Actual</div>
+        
+        <div class="top-bar">
+            <div>
+                <div style="font-size:10px; color:#888;">HOY TOCA</div>
+                <h2 id="today-title">Cargando...</h2>
             </div>
-            <div class="stat-box">
-                <div class="stat-val" style="color:var(--accent)" id="reps-display">-</div>
-                <div class="stat-lbl">Objetivo Reps</div>
+            <div id="global-timer-box" class="global-timer-box">
+                ⏱️ <span id="global-timer-val">00:00</span>
             </div>
         </div>
 
-        <h2 id="today-title" style="margin-bottom:15px;">Cargando Coach...</h2>
+        <button id="btn-start" class="btn-start" onclick="startWorkout()">
+            ▶ COMENZAR SESIÓN
+        </button>
 
-        <div id="workout-container"></div>
+        <div id="workout-content" class="hidden">
+            
+            <div class="card rest-timer-ui">
+                <div>
+                    <div style="font-size:10px; color:#888; margin-bottom:2px;">TIEMPO DESCANSO</div>
+                    <div id="rest-timer-val" class="rest-val">0:00</div>
+                </div>
+                <div class="rest-btns">
+                    <button onclick="startRest(60)">60s</button>
+                    <button onclick="startRest(90)">90s</button>
+                    <button onclick="startRest(120)">2m</button>
+                </div>
+            </div>
 
-        <div class="card" style="border-color: #333; margin-top:20px;">
-            <div style="font-size:10px; color:#888; margin-bottom:5px;">FEEDBACK AL COACH</div>
-            <input type="number" id="inp-weight" step="0.1" placeholder="Peso corporal (kg)">
-            <select id="inp-rpe">
-                <option value="">¿Qué tal te ha ido? (RPE)</option>
-                <option value="5">5 - Muy Fácil (Subir nivel)</option>
-                <option value="6">6 - Fácil (Subir nivel)</option>
-                <option value="7">7 - Perfecto (Mantener)</option>
-                <option value="8">8 - Duro (Mantener)</option>
-                <option value="9">9 - Al límite (Bajar)</option>
-                <option value="10">10 - Fallo Muscular</option>
-            </select>
-            <button id="btn-save" class="btn-save" onclick="saveSession()">FINALIZAR SESIÓN</button>
+            <div class="grid-stats">
+                <div class="stat-box">
+                    <div class="stat-val" id="lvl-display">-</div>
+                    <div class="stat-lbl">Nivel</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-val" style="color:var(--accent)" id="reps-display">-</div>
+                    <div class="stat-lbl">Objetivo</div>
+                </div>
+            </div>
+
+            <div id="exercises-list"></div>
+
+            <div class="card" style="border-color: #444; margin-top:20px;">
+                <div style="font-size:10px; color:#888; margin-bottom:5px;">FINALIZAR Y ADAPTAR</div>
+                <input type="number" id="inp-weight" step="0.1" placeholder="Peso corporal (kg)">
+                <select id="inp-rpe">
+                    <option value="">Sensación (RPE)</option>
+                    <option value="5">5 - Muy Fácil (Sube Nivel)</option>
+                    <option value="6">6 - Fácil (Sube Nivel)</option>
+                    <option value="7">7 - Justo</option>
+                    <option value="8">8 - Duro</option>
+                    <option value="9">9 - Máximo (Baja Nivel)</option>
+                </select>
+                <button id="btn-save" class="btn-save" onclick="saveSession()">TERMINAR ENTRENAMIENTO</button>
+            </div>
         </div>
     </div>
 
@@ -284,7 +338,7 @@
     </div>
 
     <nav class="tab-bar">
-        <button class="tab-btn active" onclick="switchTab('train')">COACH</button>
+        <button class="tab-btn active" onclick="switchTab('train')">ENTRENO</button>
         <button class="tab-btn" onclick="switchTab('anl')">DATOS</button>
     </nav>
 

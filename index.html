@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BioHacker v12 Pro</title>
+    <title>BioHacker v13 Final</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -21,48 +21,42 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- BASE DE DATOS MEJORADA (Descripciones + Videos) ---
+        // --- BASE DE DATOS ---
         const EXERCISES = {
             pushups: { 
-                name: "Flexiones", 
-                rest: 60, 
+                name: "Flexiones", rest: 60, 
                 img: "https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?q=80&w=400&auto=format&fit=crop",
-                desc: "Mantén el cuerpo recto como una tabla. Baja hasta que el pecho casi toque el suelo y sube explosivamente. Codos a 45 grados.",
+                desc: "Cuerpo recto. Baja pecho al suelo. Codos 45º. Sube explosivo.",
                 video: "https://www.youtube.com/results?search_query=tecnica+flexiones+correcta"
             },
             squats: { 
-                name: "Sentadillas", 
-                rest: 90, 
+                name: "Sentadillas", rest: 90, 
                 img: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?q=80&w=400&auto=format&fit=crop",
-                desc: "Pies ancho de hombros. Baja cadera atrás y abajo rompiendo el paralelo (rodilla). Mantén pecho alto y espalda neutra.",
+                desc: "Pies ancho hombros. Baja cadera atrás y abajo. Rompe paralelo. Pecho alto.",
                 video: "https://www.youtube.com/results?search_query=tecnica+sentadilla+air+squat"
             },
             lunges: { 
-                name: "Zancadas", 
-                rest: 60, 
+                name: "Zancadas", rest: 60, 
                 img: "https://images.unsplash.com/photo-1434608519344-49d77a699ded?q=80&w=400&auto=format&fit=crop",
-                desc: "Da un paso largo. Baja la rodilla trasera casi al suelo. Ambas rodillas a 90 grados. Empuja con el talón delantero para volver.",
+                desc: "Paso largo. Rodilla trasera casi toca suelo. 90 grados ambas piernas.",
                 video: "https://www.youtube.com/results?search_query=tecnica+zancadas"
             },
             plank: { 
-                name: "Plancha Abd.", 
-                rest: 45, 
+                name: "Plancha Abd.", rest: 45, 
                 img: "https://plus.unsplash.com/premium_photo-1672046218038-f86a978f85f3?q=80&w=400&auto=format&fit=crop",
-                desc: "Apoya antebrazos. Cuerpo recto. Aprieta glúteos y abdomen fuertemente. No dejes caer la cadera.",
+                desc: "Antebrazos apoyados. Cuerpo bloqueado. Aprieta glúteo y abdomen fuerte.",
                 video: "https://www.youtube.com/results?search_query=tecnica+plancha+abdominal"
             },
             burpees: { 
-                name: "Burpees", 
-                rest: 90, 
+                name: "Burpees", rest: 90, 
                 img: "https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?q=80&w=400&auto=format&fit=crop", 
-                desc: "Sentadilla -> Manos al suelo -> Salto atrás -> Flexión (pecho al suelo) -> Salto adelante -> Salto vertical con palmada.",
+                desc: "Sentadilla > Suelo > Flexión > Salto. Todo fluido.",
                 video: "https://www.youtube.com/results?search_query=como+hacer+burpees"
             },
             row: { 
-                name: "Remo / Dominada", 
-                rest: 90, 
+                name: "Remo / Dominada", rest: 90, 
                 img: "https://images.unsplash.com/photo-1598289431512-b97b0917affc?q=80&w=400&auto=format&fit=crop",
-                desc: "Si tienes barra: Dominadas estrictas. Si no: Remo en mesa o con banda elástica. Retrae escápulas al tirar.",
+                desc: "Tracción vertical u horizontal. Céntrate en juntar escápulas atrás.",
                 video: "https://www.youtube.com/results?search_query=australian+pull+ups+home"
             }
         };
@@ -80,75 +74,88 @@
         // --- ESTILOS ---
         const styles = `
             :root { --primary: #0a84ff; --bg: #000; --card: #1c1c1e; --text: #fff; --accent: #32d74b; --warning: #ffd60a; }
-            body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; padding-bottom: 100px; }
+            body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; padding-bottom: 120px; }
             
-            .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-            .global-timer { font-family: monospace; font-size: 20px; font-weight: 700; color: #444; background: #111; padding: 5px 12px; border-radius: 8px; border: 1px solid #222; transition: all 0.3s; }
-            .global-timer.active { color: var(--primary); border-color: var(--primary); box-shadow: 0 0 15px rgba(10,132,255,0.2); }
+            /* Header & Timer */
+            .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; position: sticky; top: 0; background: var(--bg); z-index: 50; padding: 10px 0; border-bottom: 1px solid #111; }
+            .global-timer { font-family: monospace; font-size: 24px; font-weight: 700; color: #666; background: #111; padding: 8px 16px; border-radius: 8px; border: 1px solid #222; min-width: 80px; text-align: center; }
+            .global-timer.active { color: var(--primary); border-color: var(--primary); animation: pulse 2s infinite; }
+            @keyframes pulse { 0% {box-shadow: 0 0 0 rgba(10,132,255,0);} 50% {box-shadow: 0 0 15px rgba(10,132,255,0.2);} 100% {box-shadow: 0 0 0 rgba(10,132,255,0);} }
 
             /* Ejercicios */
             .ex-card { display: flex; align-items: center; background: #1c1c1e; margin-bottom: 12px; border-radius: 12px; overflow: hidden; padding-right: 15px; border: 1px solid #333; position: relative; }
             .ex-img { width: 85px; height: 85px; object-fit: cover; margin-right: 15px; cursor: pointer; }
-            .ex-hint { position: absolute; bottom: 5px; left: 5px; font-size: 8px; background: rgba(0,0,0,0.7); padding: 2px 4px; border-radius: 4px; pointer-events: none; }
+            .ex-hint { position: absolute; bottom: 5px; left: 5px; font-size: 9px; background: rgba(0,0,0,0.7); padding: 2px 5px; border-radius: 4px; pointer-events: none; color: white; }
             .ex-info { flex: 1; }
             .ex-name { font-weight: bold; font-size: 16px; margin-bottom: 4px; }
             .ex-meta { font-size: 13px; color: #888; display: flex; gap: 10px; }
             .tag-rest { color: var(--warning); font-weight: 600; }
             
-            /* Start Btn */
-            .sticky-action { position: fixed; bottom: 85px; left: 15px; right: 15px; z-index: 90; }
-            .btn-start { width: 100%; background: var(--accent); color: #000; font-weight: 800; padding: 16px; border-radius: 15px; border: none; font-size: 18px; box-shadow: 0 4px 15px rgba(50, 215, 75, 0.3); cursor: pointer; }
+            /* Botón Start (Flotante) */
+            .sticky-action { position: fixed; bottom: 80px; left: 15px; right: 15px; z-index: 90; }
+            .btn-start { width: 100%; background: var(--accent); color: #000; font-weight: 900; padding: 18px; border-radius: 16px; border: none; font-size: 18px; box-shadow: 0 5px 20px rgba(50, 215, 75, 0.4); cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
             
-            /* Active Panel & Finish */
-            .active-panel { background: #111; border: 1px solid var(--primary); padding: 15px; border-radius: 15px; margin-bottom: 20px; display: none; }
-            .active-panel.visible { display: block; animation: fadeIn 0.5s; }
-            .rest-display { font-size: 36px; font-family: monospace; text-align: center; color: #fff; margin: 10px 0; }
-            .rest-controls { display: flex; gap: 5px; justify-content: center; }
-            .rest-controls button { background: #333; color: white; border: none; padding: 10px; border-radius: 8px; flex: 1; }
+            /* Panel Descanso */
+            .active-panel { background: #111; border: 1px solid var(--primary); padding: 20px; border-radius: 16px; margin-bottom: 25px; display: none; }
+            .active-panel.visible { display: block; }
+            .rest-display { font-size: 40px; font-family: monospace; text-align: center; color: #fff; margin: 15px 0; font-weight: bold; }
+            .rest-controls { display: flex; gap: 8px; justify-content: center; }
+            .rest-controls button { background: #2c2c2e; color: white; border: 1px solid #444; padding: 12px; border-radius: 10px; flex: 1; font-weight: bold; }
 
+            /* Finalizar & Editar */
             .finish-card { display: none; margin-top: 30px; background: #1c1c1e; padding: 20px; border-radius: 20px; border: 1px solid #333; }
             .finish-card.visible { display: block; }
             input, select { width: 100%; padding: 14px; background: #000; border: 1px solid #444; color: #fff; border-radius: 10px; margin-top: 10px; box-sizing: border-box; font-size: 16px; }
             .btn-save { width: 100%; background: var(--primary); color: white; padding: 16px; border: none; border-radius: 12px; font-weight: bold; margin-top: 15px; font-size: 16px; }
-            .btn-save.update { background: #ff9f0a; }
+            .btn-save.update { background: #ff9f0a; color: black; }
 
-            /* MODAL INFO */
-            .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 200; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-            .modal-content { background: #1c1c1e; width: 85%; max-width: 400px; padding: 25px; border-radius: 20px; border: 1px solid #444; text-align: center; position: relative; }
-            .close-modal { position: absolute; top: 10px; right: 15px; font-size: 24px; color: #888; background: none; border: none; cursor: pointer; }
-            .btn-video { display: inline-block; background: #ff0000; color: white; text-decoration: none; padding: 10px 20px; border-radius: 20px; margin-top: 15px; font-weight: bold; font-size: 14px; }
+            /* Preview Tomorrow */
+            .tomorrow-box { margin-top: 40px; padding: 20px; border-top: 1px solid #333; opacity: 0.8; }
+            .tomorrow-title { font-size: 12px; text-transform: uppercase; color: #888; margin-bottom: 10px; letter-spacing: 1px; }
+            .mini-grid { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; }
+            .mini-ex { flex: 0 0 60px; text-align: center; font-size: 10px; }
+            .mini-img { width: 50px; height: 50px; border-radius: 10px; object-fit: cover; margin-bottom: 5px; border: 1px solid #444; }
 
-            /* Tab Bar */
+            /* Modal */
+            .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 200; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+            .modal-content { background: #1c1c1e; width: 85%; max-width: 400px; padding: 30px; border-radius: 20px; border: 1px solid #444; text-align: center; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+            .close-modal { position: absolute; top: 15px; right: 20px; font-size: 28px; color: #888; background: none; border: none; cursor: pointer; }
+            .btn-video { display: block; width: 100%; background: #ff0000; color: white; text-decoration: none; padding: 14px; border-radius: 12px; margin-top: 20px; font-weight: bold; }
+
             .hidden { display: none !important; }
             .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(20,20,20,0.95); display: flex; padding: 15px; border-top: 1px solid #333; z-index: 100; }
             .tab-btn { flex: 1; background: none; border: none; color: #666; font-weight: 700; font-size: 11px; }
             .tab-btn.active { color: var(--primary); }
-            
-            @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         `;
         const styleSheet = document.createElement("style"); styleSheet.innerText = styles; document.head.appendChild(styleSheet);
 
-        // --- LÓGICA ---
+        // --- VARIABLES ---
         let userLevel = 1; let weight = 72;
         let todayRoutine = {};
         let currentReps = 10;
-        let globalSeconds = 0; let globalInterval = null;
+        
+        // Timers
+        let startTime = 0;
+        let globalInterval = null;
         let restInterval = null;
-        let editingId = null; // Para saber si estamos editando
+        let editingId = null; 
 
         window.initApp = async () => {
-            const dayIdx = new Date().getDay();
-            todayRoutine = SCHEDULE[dayIdx];
+            const todayIdx = new Date().getDay();
+            todayRoutine = SCHEDULE[todayIdx];
             
+            // Stats Usuario
             onSnapshot(doc(db, "userStats", "global"), (d) => {
                 if(d.exists()) {
                     const data = d.data();
                     userLevel = data.level || 1; weight = data.weight || 72;
                     currentReps = userLevel === 1 ? 10 : (userLevel === 2 ? 12 : 15);
                     renderSession();
+                    renderTomorrow(todayIdx);
                 }
             });
 
+            // Historial
             onSnapshot(query(collection(db, "workouts"), orderBy("date", "desc"), limit(10)), (snap) => {
                 const logs = snap.docs.map(d => ({id:d.id, ...d.data()}));
                 renderHistory(logs);
@@ -158,13 +165,19 @@
 
         function renderSession() {
             document.getElementById('today-title').innerText = todayRoutine.type;
+            // Pre-llenar el selector de tipo con lo que toca hoy
+            const typeSelect = document.getElementById('inp-type');
+            if(typeSelect) typeSelect.value = todayRoutine.type;
+
             const container = document.getElementById('session-content');
             
             if (todayRoutine.type === "Trekking" || todayRoutine.type === "Aeróbico") {
                 document.getElementById('start-btn-container').style.display = 'none';
-                const msg = todayRoutine.type === "Trekking" ? "🏔️ Día de Montaña" : "🏃 Aeróbico / Zona 2";
-                const sub = todayRoutine.type === "Trekking" ? `Hidratación: ${(weight*0.04).toFixed(1)}L` : "45-60 Minutos ritmo constante";
-                container.innerHTML = `<div class="ex-card" style="padding:25px; display:block; text-align:center; border-color:var(--warning); color:var(--warning);"><h3>${msg}</h3><p>${sub}</p></div>`;
+                container.innerHTML = `<div class="ex-card" style="padding:30px; display:block; text-align:center; border-color:var(--warning); color:var(--warning);">
+                    <div style="font-size:40px; margin-bottom:10px;">${todayRoutine.type==="Trekking"?"🏔️":"🏃"}</div>
+                    <h3>${todayRoutine.type}</h3>
+                    <p style="color:#888; margin-top:10px;">Hoy no hay registro de series. <br>Disfruta del movimiento.</p>
+                </div>`;
             } else {
                 let html = "";
                 todayRoutine.keys.forEach(key => {
@@ -176,7 +189,7 @@
                             <div class="ex-info">
                                 <div class="ex-name">${ex.name}</div>
                                 <div class="ex-meta">
-                                    <span>3 Series x ${currentReps} Reps</span>
+                                    <span>3 x ${currentReps}</span>
                                     <span class="tag-rest">⏳ ${ex.rest}s</span>
                                 </div>
                             </div>
@@ -187,9 +200,28 @@
             }
         }
 
+        function renderTomorrow(todayIdx) {
+            const tmrIdx = (todayIdx + 1) % 7;
+            const tmrRoutine = SCHEDULE[tmrIdx];
+            document.getElementById('tmr-type').innerText = tmrRoutine.type;
+            
+            const container = document.getElementById('tmr-icons');
+            if(tmrRoutine.keys.length === 0) {
+                container.innerHTML = `<span style="font-size:12px; color:#666;">Día de Cardio / Descanso Activo</span>`;
+            } else {
+                container.innerHTML = tmrRoutine.keys.map(k => `
+                    <div class="mini-ex" onclick="showInfo('${k}')">
+                        <img src="${EXERCISES[k].img}" class="mini-img">
+                        <div>${EXERCISES[k].name.split(' ')[0]}</div>
+                    </div>
+                `).join('');
+            }
+        }
+
         // --- MODAL INFO ---
         window.showInfo = (key) => {
             const ex = EXERCISES[key];
+            if(!ex) return;
             document.getElementById('m-title').innerText = ex.name;
             document.getElementById('m-desc').innerText = ex.desc;
             document.getElementById('m-video').href = ex.video;
@@ -197,23 +229,28 @@
         };
         window.closeModal = () => document.getElementById('info-modal').style.display = 'none';
 
-        // --- LOGICA TIMER ---
+        // --- TIMER LOGIC (ARREGLADO) ---
         window.startWorkout = () => {
-            document.getElementById('start-btn-container').style.display = 'none';
+            document.getElementById('start-btn-container').classList.add('hidden'); // Usar clase hidden
             document.getElementById('panel-active').classList.add('visible');
             document.getElementById('finish-section').classList.add('visible');
             document.getElementById('global-timer-ui').classList.add('active');
 
+            startTime = Date.now();
             if(globalInterval) clearInterval(globalInterval);
-            globalSeconds = 0;
+            
             globalInterval = setInterval(() => {
-                globalSeconds++;
-                const m = Math.floor(globalSeconds/60);
-                const s = globalSeconds%60;
-                document.getElementById('global-timer-ui').innerText = `${m}:${s.toString().padStart(2,'0')}`;
+                const diff = Math.floor((Date.now() - startTime) / 1000);
+                const m = Math.floor(diff / 60);
+                const s = diff % 60;
+                document.getElementById('global-timer-ui').innerText = 
+                    `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
             }, 1000);
             
-            window.scrollTo({ top: 100, behavior: 'smooth' });
+            // Scroll para mostrar herramientas
+            setTimeout(() => {
+                document.getElementById('panel-active').scrollIntoView({behavior: "smooth", block: "center"});
+            }, 300);
         };
 
         window.startRest = (sec) => {
@@ -221,123 +258,127 @@
             let left = sec;
             const display = document.getElementById('rest-display');
             display.style.color = "#fff";
+            display.innerText = `0:${left}`;
             
             restInterval = setInterval(() => {
                 left--;
-                const m = Math.floor(left/60); const s = left%60;
+                const m = Math.floor(left/60); 
+                const s = left%60;
                 display.innerText = `${m}:${s.toString().padStart(2,'0')}`;
-                if(left<=0) {
+                
+                if(left <= 0) {
                     clearInterval(restInterval);
+                    display.innerText = "¡VAMOS!";
                     display.style.color = "var(--accent)";
                     navigator.vibrate([200, 100, 200]);
                 }
             }, 1000);
         };
 
-        // --- GUARDAR / EDITAR ---
+        // --- SAVE / EDIT ---
         window.saveSession = async () => {
             const rpe = document.getElementById('inp-rpe').value;
             const w = document.getElementById('inp-weight').value;
-            if(!rpe || !w) return alert("Rellena todos los datos");
+            const type = document.getElementById('inp-type').value; // Nuevo campo
+
+            if(!rpe || !w || !type) return alert("Por favor revisa todos los campos.");
 
             const btn = document.getElementById('btn-finish');
-            const originalText = btn.innerText;
-            btn.innerText = "Procesando...";
+            btn.innerText = "Guardando...";
 
-            // IA Coach Logic
+            // Calcular duración
+            let duration = 0;
+            if(startTime > 0) {
+                duration = Math.ceil((Date.now() - startTime) / 60000); // en minutos
+            } else {
+                duration = 45; // Valor por defecto si no usó timer (edición)
+            }
+
+            // Coach Logic (Solo si es fuerza)
             let newLvl = userLevel;
-            if(parseInt(rpe) <= 6) newLvl++;
-            else if(parseInt(rpe) >= 9 && userLevel > 1) newLvl--;
+            if(["Torso", "Pierna", "Full Body"].includes(type)) {
+                if(parseInt(rpe) <= 6) newLvl++;
+                else if(parseInt(rpe) >= 9 && userLevel > 1) newLvl--;
+            }
 
             const data = {
                 date: new Date().toISOString(),
-                type: todayRoutine.type,
+                type: type, // Guardamos el tipo seleccionado
                 rpe: parseInt(rpe),
                 weight: parseFloat(w),
-                duration: Math.ceil(globalSeconds/60),
-                level: newLvl // Guardamos nivel para la gráfica
+                duration: duration,
+                level: newLvl
             };
 
             if(editingId) {
-                // MODO EDICIÓN
                 await updateDoc(doc(db, "workouts", editingId), data);
-                alert("Entreno actualizado");
+                alert("Entreno actualizado correctamente");
                 editingId = null;
-                btn.classList.remove('update');
-                btn.innerText = "GUARDAR Y TERMINAR";
             } else {
-                // MODO NUEVO
                 await addDoc(collection(db, "workouts"), data);
                 await setDoc(doc(db, "userStats", "global"), { level: newLvl, weight: parseFloat(w) }, { merge: true });
-                alert("¡Guardado! Buen trabajo.");
+                alert("¡Sesión guardada!");
             }
             
             location.reload();
         };
 
-        // --- HISTORIAL Y EDICIÓN ---
+        // --- HISTORY & EDIT UI ---
         function renderHistory(logs) {
             document.getElementById('hist-list').innerHTML = logs.map(l => `
-                <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid #333; font-size:13px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:15px 0; border-bottom:1px solid #333; font-size:13px;">
                     <div>
-                        <b style="color:white">${l.type}</b>
-                        <br><span style="color:#666">${new Date(l.date).toLocaleDateString()} · Lvl ${l.level||1} · RPE ${l.rpe}</span>
+                        <b style="font-size:14px; color:white">${l.type}</b>
+                        <br><span style="color:#666">${new Date(l.date).toLocaleDateString()} · ${l.duration} min · RPE ${l.rpe}</span>
                     </div>
                     <div>
-                        <button onclick='editLog("${l.id}", ${l.weight}, ${l.rpe})' style="background:none; border:none; margin-right:10px; font-size:16px;">✏️</button>
-                        <button onclick="deleteLog('${l.id}')" style="color:#ff453a; background:none; border:none; font-size:16px;">✕</button>
+                        <button onclick='editLog("${l.id}", "${l.type}", ${l.weight}, ${l.rpe})' style="background:none; border:none; margin-right:15px; font-size:18px; cursor:pointer;">✏️</button>
+                        <button onclick="deleteLog('${l.id}')" style="color:#ff453a; background:none; border:none; font-size:18px; cursor:pointer;">✕</button>
                     </div>
                 </div>
             `).join('');
         }
 
-        window.editLog = (id, w, rpe) => {
+        window.editLog = (id, type, w, rpe) => {
             switchTab('train');
-            // Preparar UI para edición
             editingId = id;
-            document.getElementById('start-btn-container').style.display = 'none';
+            
+            // Ocultar botón start, mostrar formulario
+            document.getElementById('start-btn-container').classList.add('hidden');
             document.getElementById('finish-section').classList.add('visible');
+            
+            // Rellenar datos
             document.getElementById('inp-weight').value = w;
             document.getElementById('inp-rpe').value = rpe;
+            document.getElementById('inp-type').value = type;
             
+            // UI Feedback
             const btn = document.getElementById('btn-finish');
             btn.innerText = "ACTUALIZAR REGISTRO";
             btn.classList.add('update');
+            document.getElementById('today-title').innerText = "Editando Registro";
             
-            document.getElementById('session-content').innerHTML = `<div style="text-align:center; padding:20px; color:#ff9f0a;">✏️ Editando registro histórico...</div>`;
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            window.scrollTo({ top: 300, behavior: 'smooth' });
         };
 
         window.deleteLog = async(id) => { if(confirm("¿Borrar?")) await deleteDoc(doc(db,"workouts",id)); };
 
-        // --- GRÁFICA PROGRESIÓN REAL (NIVEL) ---
         let chartInstance;
         function updateChart(logs) {
             const ctx = document.getElementById('chart').getContext('2d');
-            const data = [...logs].reverse(); // Orden cronológico
+            const data = [...logs].reverse();
             if(chartInstance) chartInstance.destroy();
-            
             chartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: data.map(l => new Date(l.date).getDate() + '/' + (new Date(l.date).getMonth()+1)),
                     datasets: [{ 
-                        label: 'Nivel de Fuerza', 
-                        data: data.map(l => l.level || 1), // Graficamos NIVEL, no RPE
-                        borderColor: '#32d74b', // Verde progreso
-                        backgroundColor: 'rgba(50, 215, 75, 0.1)',
-                        fill: true,
-                        tension: 0.3,
-                        stepped: true // Escalones porque el nivel son saltos enteros
+                        label: 'Nivel', data: data.map(l => l.level || 1), 
+                        borderColor: '#32d74b', backgroundColor: 'rgba(50, 215, 75, 0.1)',
+                        fill: true, tension: 0.3, stepped: true
                     }]
                 },
-                options: { 
-                    plugins:{ legend:{ display: true, labels:{color:'white'} } }, 
-                    scales:{ 
-                        x:{ display:true, grid:{display:false} }, 
-                        y:{ display:true, grid:{color:'#333'}, min: 0, ticks:{stepSize:1} } 
-                    } 
-                }
+                options: { plugins:{legend:{display:false}}, scales:{x:{display:true}, y:{display:true, grid:{color:'#333'}}} }
             });
         }
 
@@ -356,9 +397,9 @@
     <div id="info-modal" class="modal-overlay">
         <div class="modal-content">
             <button class="close-modal" onclick="closeModal()">×</button>
-            <h2 id="m-title" style="margin-bottom:10px;">Ejercicio</h2>
-            <p id="m-desc" style="color:#ccc; font-size:14px; line-height:1.5;">Descripción...</p>
-            <a id="m-video" href="#" target="_blank" class="btn-video">📺 Ver Tutorial en YouTube</a>
+            <h2 id="m-title" style="margin-bottom:10px; color:white;">Nombre</h2>
+            <p id="m-desc" style="color:#ccc; font-size:15px; line-height:1.5;">Descripción...</p>
+            <a id="m-video" href="#" target="_blank" class="btn-video">📺 Ver en YouTube</a>
         </div>
     </div>
 
@@ -366,46 +407,65 @@
         <div class="top-bar">
             <div>
                 <div style="font-size:10px; color:#888;">HOY TOCA</div>
-                <h2 id="today-title">Cargando...</h2>
+                <h2 id="today-title">...</h2>
             </div>
             <div id="global-timer-ui" class="global-timer">00:00</div>
         </div>
 
         <div id="panel-active" class="active-panel">
-            <div style="text-align:center; font-size:10px; color:#888; text-transform:uppercase;">Descanso</div>
+            <div style="text-align:center; font-size:11px; color:#888; letter-spacing:1px; text-transform:uppercase;">Tiempo de Descanso</div>
             <div id="rest-display" class="rest-display">0:00</div>
             <div class="rest-controls">
-                <button onclick="startRest(30)">30s</button>
                 <button onclick="startRest(60)">60s</button>
                 <button onclick="startRest(90)">90s</button>
                 <button onclick="startRest(120)">2m</button>
             </div>
         </div>
 
-        <div id="session-content" style="padding-bottom: 80px;"></div>
+        <div id="session-content"></div>
+
+        <div class="tomorrow-box">
+            <div class="tomorrow-title">👀 Previsión para Mañana: <span id="tmr-type" style="color:white; font-weight:bold;"></span></div>
+            <div id="tmr-icons" class="mini-grid">
+                </div>
+        </div>
 
         <div id="start-btn-container" class="sticky-action">
-            <button class="btn-start" onclick="startWorkout()">▶ COMENZAR ENTRENAMIENTO</button>
+            <button class="btn-start" onclick="startWorkout()">▶ COMENZAR SESIÓN</button>
         </div>
 
         <div id="finish-section" class="finish-card">
-            <h3 style="margin-bottom:10px;">Registro de Sesión</h3>
-            <input type="number" id="inp-weight" placeholder="Peso Actual (kg)">
-            <select id="inp-rpe">
-                <option value="">Nivel de Esfuerzo (RPE)</option>
-                <option value="6">6 - Fácil (Sube Nivel)</option>
-                <option value="7">7 - Adecuado</option>
-                <option value="8">8 - Duro</option>
-                <option value="9">9 - Muy Duro (Baja Nivel)</option>
+            <h3 style="margin-bottom:15px;">Datos de la Sesión</h3>
+            
+            <label style="font-size:12px; color:#888;">Tipo de Entrenamiento</label>
+            <select id="inp-type">
+                <option value="Torso">Torso</option>
+                <option value="Pierna">Pierna</option>
+                <option value="Full Body">Full Body</option>
+                <option value="Aeróbico">Aeróbico</option>
+                <option value="Trekking">Trekking</option>
             </select>
-            <button id="btn-finish" class="btn-save" onclick="saveSession()">GUARDAR Y TERMINAR</button>
+
+            <label style="font-size:12px; color:#888; display:block; margin-top:10px;">Peso Corporal (Kg)</label>
+            <input type="number" id="inp-weight" step="0.1" placeholder="Ej: 75.5">
+
+            <label style="font-size:12px; color:#888; display:block; margin-top:10px;">Sensación (RPE)</label>
+            <select id="inp-rpe">
+                <option value="">¿Cómo fue?</option>
+                <option value="6">6 - Fácil (Subir nivel)</option>
+                <option value="7">7 - Normal</option>
+                <option value="8">8 - Duro</option>
+                <option value="9">9 - Muy Duro (Bajar nivel)</option>
+            </select>
+            
+            <button id="btn-finish" class="btn-save" onclick="saveSession()">GUARDAR SESIÓN</button>
         </div>
     </div>
 
     <div id="p-anl" class="page hidden">
         <h1>Mi Progreso</h1>
         <div class="card"><canvas id="chart" height="150"></canvas></div>
-        <div class="card" id="hist-list"></div>
+        <div class="card" id="hist-list" style="padding-bottom:50px;"></div>
     </div>
 
     <nav class="tab-bar">

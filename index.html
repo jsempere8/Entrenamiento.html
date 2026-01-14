@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BioHacker v13 Final</title>
+    <title>BioHacker v14: Edu Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -21,43 +21,43 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- BASE DE DATOS ---
+        // --- BASE DE DATOS: EDICIÓN EDU GARCIA ---
         const EXERCISES = {
             pushups: { 
-                name: "Flexiones", rest: 60, 
+                name: "Flexiones (Push-ups)", rest: 60, 
                 img: "https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?q=80&w=400&auto=format&fit=crop",
-                desc: "Cuerpo recto. Baja pecho al suelo. Codos 45º. Sube explosivo.",
-                video: "https://www.youtube.com/results?search_query=tecnica+flexiones+correcta"
+                desc: "Crea un 'triángulo' entre tu cabeza y manos. No abras los codos (forma de flecha, no de T). Baja controlado, sube explosivo.",
+                video: "https://www.youtube.com/watch?v=E6a_g8FTPoQ" // Video específico Edu Garcia
             },
             squats: { 
                 name: "Sentadillas", rest: 90, 
                 img: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?q=80&w=400&auto=format&fit=crop",
-                desc: "Pies ancho hombros. Baja cadera atrás y abajo. Rompe paralelo. Pecho alto.",
-                video: "https://www.youtube.com/results?search_query=tecnica+sentadilla+air+squat"
+                desc: "Pies bien apoyados (trípode plantar). Rodillas siguen la línea del pie. Baja profundo pero manteniendo la espalda neutra.",
+                video: "https://www.youtube.com/watch?v=J9x0ffVL5rg" // Video 6 Variantes Squats Edu Garcia
             },
             lunges: { 
-                name: "Zancadas", rest: 60, 
+                name: "Zancadas / Stride", rest: 60, 
                 img: "https://images.unsplash.com/photo-1434608519344-49d77a699ded?q=80&w=400&auto=format&fit=crop",
-                desc: "Paso largo. Rodilla trasera casi toca suelo. 90 grados ambas piernas.",
-                video: "https://www.youtube.com/results?search_query=tecnica+zancadas"
+                desc: "Paso controlado. Edu recomienda fluidez: no golpees el suelo, aterriza suave. Tronco erguido.",
+                video: "https://www.youtube.com/results?search_query=edugarcia_trainer+zancadas+fuerza" // Búsqueda específica en su canal
             },
             plank: { 
-                name: "Plancha Abd.", rest: 45, 
+                name: "Plancha Segura", rest: 45, 
                 img: "https://plus.unsplash.com/premium_photo-1672046218038-f86a978f85f3?q=80&w=400&auto=format&fit=crop",
-                desc: "Antebrazos apoyados. Cuerpo bloqueado. Aprieta glúteo y abdomen fuerte.",
-                video: "https://www.youtube.com/results?search_query=tecnica+plancha+abdominal"
+                desc: "Si duele la espalda, sube la cadera un poco. Empuja el suelo con los antebrazos. Glúteo de acero.",
+                video: "https://www.youtube.com/watch?v=_OlSElUXU2w" // Video Plancha sin dolor Edu Garcia
             },
             burpees: { 
-                name: "Burpees", rest: 90, 
+                name: "Burpees (Fluidity)", rest: 90, 
                 img: "https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?q=80&w=400&auto=format&fit=crop", 
-                desc: "Sentadilla > Suelo > Flexión > Salto. Todo fluido.",
-                video: "https://www.youtube.com/results?search_query=como+hacer+burpees"
+                desc: "Más que un burpee militar, busca una transición fluida: Sentadilla -> Plancha -> Suelo -> Arriba. Eficiencia de movimiento.",
+                video: "https://www.youtube.com/results?search_query=edugarcia_trainer+levantarse+suelo" // Enfoque movimiento natural
             },
             row: { 
                 name: "Remo / Dominada", rest: 90, 
                 img: "https://images.unsplash.com/photo-1598289431512-b97b0917affc?q=80&w=400&auto=format&fit=crop",
-                desc: "Tracción vertical u horizontal. Céntrate en juntar escápulas atrás.",
-                video: "https://www.youtube.com/results?search_query=australian+pull+ups+home"
+                desc: "Retracción escapular: junta los omóplatos antes de tirar. Codos pegados al cuerpo si buscas fuerza.",
+                video: "https://www.youtube.com/shorts/sMhAi0eTlMA" // Short específico Remo Anillas
             }
         };
 
@@ -134,7 +134,6 @@
         let todayRoutine = {};
         let currentReps = 10;
         
-        // Timers
         let startTime = 0;
         let globalInterval = null;
         let restInterval = null;
@@ -144,7 +143,6 @@
             const todayIdx = new Date().getDay();
             todayRoutine = SCHEDULE[todayIdx];
             
-            // Stats Usuario
             onSnapshot(doc(db, "userStats", "global"), (d) => {
                 if(d.exists()) {
                     const data = d.data();
@@ -155,7 +153,6 @@
                 }
             });
 
-            // Historial
             onSnapshot(query(collection(db, "workouts"), orderBy("date", "desc"), limit(10)), (snap) => {
                 const logs = snap.docs.map(d => ({id:d.id, ...d.data()}));
                 renderHistory(logs);
@@ -165,7 +162,6 @@
 
         function renderSession() {
             document.getElementById('today-title').innerText = todayRoutine.type;
-            // Pre-llenar el selector de tipo con lo que toca hoy
             const typeSelect = document.getElementById('inp-type');
             if(typeSelect) typeSelect.value = todayRoutine.type;
 
@@ -185,7 +181,7 @@
                     html += `
                         <div class="ex-card">
                             <img src="${ex.img}" class="ex-img" onclick="showInfo('${key}')">
-                            <div class="ex-hint">ℹ️ Toca foto</div>
+                            <div class="ex-hint">ℹ️ Ver Tutorial</div>
                             <div class="ex-info">
                                 <div class="ex-name">${ex.name}</div>
                                 <div class="ex-meta">
@@ -207,7 +203,7 @@
             
             const container = document.getElementById('tmr-icons');
             if(tmrRoutine.keys.length === 0) {
-                container.innerHTML = `<span style="font-size:12px; color:#666;">Día de Cardio / Descanso Activo</span>`;
+                container.innerHTML = `<span style="font-size:12px; color:#666;">Descanso activo / Cardio</span>`;
             } else {
                 container.innerHTML = tmrRoutine.keys.map(k => `
                     <div class="mini-ex" onclick="showInfo('${k}')">
@@ -218,7 +214,6 @@
             }
         }
 
-        // --- MODAL INFO ---
         window.showInfo = (key) => {
             const ex = EXERCISES[key];
             if(!ex) return;
@@ -229,9 +224,8 @@
         };
         window.closeModal = () => document.getElementById('info-modal').style.display = 'none';
 
-        // --- TIMER LOGIC (ARREGLADO) ---
         window.startWorkout = () => {
-            document.getElementById('start-btn-container').classList.add('hidden'); // Usar clase hidden
+            document.getElementById('start-btn-container').classList.add('hidden');
             document.getElementById('panel-active').classList.add('visible');
             document.getElementById('finish-section').classList.add('visible');
             document.getElementById('global-timer-ui').classList.add('active');
@@ -247,7 +241,6 @@
                     `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
             }, 1000);
             
-            // Scroll para mostrar herramientas
             setTimeout(() => {
                 document.getElementById('panel-active').scrollIntoView({behavior: "smooth", block: "center"});
             }, 300);
@@ -275,26 +268,20 @@
             }, 1000);
         };
 
-        // --- SAVE / EDIT ---
         window.saveSession = async () => {
             const rpe = document.getElementById('inp-rpe').value;
             const w = document.getElementById('inp-weight').value;
-            const type = document.getElementById('inp-type').value; // Nuevo campo
+            const type = document.getElementById('inp-type').value;
 
-            if(!rpe || !w || !type) return alert("Por favor revisa todos los campos.");
+            if(!rpe || !w || !type) return alert("Revisa los campos.");
 
             const btn = document.getElementById('btn-finish');
             btn.innerText = "Guardando...";
 
-            // Calcular duración
             let duration = 0;
-            if(startTime > 0) {
-                duration = Math.ceil((Date.now() - startTime) / 60000); // en minutos
-            } else {
-                duration = 45; // Valor por defecto si no usó timer (edición)
-            }
+            if(startTime > 0) duration = Math.ceil((Date.now() - startTime) / 60000);
+            else duration = 45;
 
-            // Coach Logic (Solo si es fuerza)
             let newLvl = userLevel;
             if(["Torso", "Pierna", "Full Body"].includes(type)) {
                 if(parseInt(rpe) <= 6) newLvl++;
@@ -303,7 +290,7 @@
 
             const data = {
                 date: new Date().toISOString(),
-                type: type, // Guardamos el tipo seleccionado
+                type: type,
                 rpe: parseInt(rpe),
                 weight: parseFloat(w),
                 duration: duration,
@@ -312,18 +299,16 @@
 
             if(editingId) {
                 await updateDoc(doc(db, "workouts", editingId), data);
-                alert("Entreno actualizado correctamente");
+                alert("Actualizado");
                 editingId = null;
             } else {
                 await addDoc(collection(db, "workouts"), data);
                 await setDoc(doc(db, "userStats", "global"), { level: newLvl, weight: parseFloat(w) }, { merge: true });
-                alert("¡Sesión guardada!");
+                alert("¡Guardado!");
             }
-            
             location.reload();
         };
 
-        // --- HISTORY & EDIT UI ---
         function renderHistory(logs) {
             document.getElementById('hist-list').innerHTML = logs.map(l => `
                 <div style="display:flex; justify-content:space-between; align-items:center; padding:15px 0; border-bottom:1px solid #333; font-size:13px;">
@@ -342,22 +327,15 @@
         window.editLog = (id, type, w, rpe) => {
             switchTab('train');
             editingId = id;
-            
-            // Ocultar botón start, mostrar formulario
             document.getElementById('start-btn-container').classList.add('hidden');
             document.getElementById('finish-section').classList.add('visible');
-            
-            // Rellenar datos
             document.getElementById('inp-weight').value = w;
             document.getElementById('inp-rpe').value = rpe;
             document.getElementById('inp-type').value = type;
-            
-            // UI Feedback
             const btn = document.getElementById('btn-finish');
             btn.innerText = "ACTUALIZAR REGISTRO";
             btn.classList.add('update');
             document.getElementById('today-title').innerText = "Editando Registro";
-            
             window.scrollTo({ top: 300, behavior: 'smooth' });
         };
 
@@ -399,7 +377,7 @@
             <button class="close-modal" onclick="closeModal()">×</button>
             <h2 id="m-title" style="margin-bottom:10px; color:white;">Nombre</h2>
             <p id="m-desc" style="color:#ccc; font-size:15px; line-height:1.5;">Descripción...</p>
-            <a id="m-video" href="#" target="_blank" class="btn-video">📺 Ver en YouTube</a>
+            <a id="m-video" href="#" target="_blank" class="btn-video">📺 Ver Tutorial de Edu García</a>
         </div>
     </div>
 
@@ -426,8 +404,7 @@
 
         <div class="tomorrow-box">
             <div class="tomorrow-title">👀 Previsión para Mañana: <span id="tmr-type" style="color:white; font-weight:bold;"></span></div>
-            <div id="tmr-icons" class="mini-grid">
-                </div>
+            <div id="tmr-icons" class="mini-grid"></div>
         </div>
 
         <div id="start-btn-container" class="sticky-action">
@@ -436,7 +413,6 @@
 
         <div id="finish-section" class="finish-card">
             <h3 style="margin-bottom:15px;">Datos de la Sesión</h3>
-            
             <label style="font-size:12px; color:#888;">Tipo de Entrenamiento</label>
             <select id="inp-type">
                 <option value="Torso">Torso</option>
@@ -445,10 +421,8 @@
                 <option value="Aeróbico">Aeróbico</option>
                 <option value="Trekking">Trekking</option>
             </select>
-
             <label style="font-size:12px; color:#888; display:block; margin-top:10px;">Peso Corporal (Kg)</label>
             <input type="number" id="inp-weight" step="0.1" placeholder="Ej: 75.5">
-
             <label style="font-size:12px; color:#888; display:block; margin-top:10px;">Sensación (RPE)</label>
             <select id="inp-rpe">
                 <option value="">¿Cómo fue?</option>
@@ -457,7 +431,6 @@
                 <option value="8">8 - Duro</option>
                 <option value="9">9 - Muy Duro (Bajar nivel)</option>
             </select>
-            
             <button id="btn-finish" class="btn-save" onclick="saveSession()">GUARDAR SESIÓN</button>
         </div>
     </div>
@@ -472,6 +445,5 @@
         <button class="tab-btn active" onclick="switchTab('train')">ENTRENO</button>
         <button class="tab-btn" onclick="switchTab('anl')">DATOS</button>
     </nav>
-
 </body>
 </html>

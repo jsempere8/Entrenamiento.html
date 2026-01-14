@@ -6,52 +6,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>BioHacker v13 Final</title>
-    <style>
-        /* Reset y Variables */
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        :root { 
-            --primary: #0a84ff; 
-            --bg: #000; 
-            --card: #1c1c1e; 
-            --text: #fff; 
-            --accent: #32d74b; 
-            --warning: #ffd60a; 
-        }
+    <meta name="theme-color" content="#000000">
+    <title>BioHacker Training</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body style="margin:0; padding:0; background:#000 !important; color:#fff !important; font-family:-apple-system,sans-serif; min-height:100vh;">
 
 ```
-    html, body { 
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
-        background: var(--bg) !important; 
-        color: var(--text) !important; 
-        margin: 0; 
-        padding: 0;
-        min-height: 100vh;
-        overflow-x: hidden;
-    }
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     
+    html { background: #000 !important; }
     body { 
+        background: #000 !important; 
+        color: #fff !important; 
         padding: 15px; 
-        padding-bottom: 120px; 
-        padding-top: env(safe-area-inset-top);
+        padding-bottom: 120px;
     }
     
-    /* Header & Timer */
     .top-bar { 
         display: flex; 
         justify-content: space-between; 
         align-items: center; 
         margin-bottom: 20px; 
-        position: sticky; 
-        top: 0; 
-        background: var(--bg); 
-        z-index: 50; 
         padding: 10px 0; 
-        border-bottom: 1px solid #222;
+        border-bottom: 1px solid #333;
+        background: #000;
     }
     
+    .top-bar h2 { color: #fff !important; font-size: 20px; margin: 5px 0; }
+    .top-bar small { color: #888; font-size: 10px; }
+    
     .global-timer { 
-        font-family: 'Courier New', monospace; 
+        font-family: monospace; 
         font-size: 24px; 
         font-weight: 700; 
         color: #666; 
@@ -64,8 +51,8 @@
     }
     
     .global-timer.active { 
-        color: var(--primary); 
-        border-color: var(--primary); 
+        color: #0a84ff; 
+        border-color: #0a84ff; 
         animation: pulse 2s infinite; 
     }
     
@@ -74,13 +61,10 @@
         50% {box-shadow: 0 0 15px rgba(10,132,255,0.3);} 
     }
 
-    h1, h2, h3 { color: var(--text) !important; }
-    
-    /* Ejercicios */
     .ex-card { 
         display: flex; 
         align-items: center; 
-        background: var(--card); 
+        background: #1c1c1e; 
         margin-bottom: 12px; 
         border-radius: 12px; 
         overflow: hidden; 
@@ -95,7 +79,6 @@
         object-fit: cover; 
         margin-right: 15px; 
         cursor: pointer; 
-        flex-shrink: 0;
     }
     
     .ex-hint { 
@@ -103,22 +86,19 @@
         bottom: 5px; 
         left: 5px; 
         font-size: 9px; 
-        background: rgba(0,0,0,0.8); 
+        background: rgba(0,0,0,0.9); 
         padding: 3px 6px; 
         border-radius: 4px; 
-        pointer-events: none; 
         color: white; 
     }
     
-    .ex-info { flex: 1; }
-    .ex-name { font-weight: bold; font-size: 16px; margin-bottom: 4px; color: var(--text); }
+    .ex-name { font-weight: bold; font-size: 16px; margin-bottom: 4px; color: #fff; }
     .ex-meta { font-size: 13px; color: #888; display: flex; gap: 10px; }
-    .tag-rest { color: var(--warning); font-weight: 600; }
+    .tag-rest { color: #ffd60a; font-weight: 600; }
     
-    /* Botón Start (Flotante) */
     .sticky-action { 
         position: fixed; 
-        bottom: calc(80px + env(safe-area-inset-bottom)); 
+        bottom: 80px; 
         left: 15px; 
         right: 15px; 
         z-index: 90; 
@@ -126,23 +106,20 @@
     
     .btn-start { 
         width: 100%; 
-        background: var(--accent); 
+        background: #32d74b; 
         color: #000; 
         font-weight: 900; 
         padding: 18px; 
         border-radius: 16px; 
         border: none; 
         font-size: 18px; 
-        box-shadow: 0 5px 20px rgba(50, 215, 75, 0.4); 
         cursor: pointer; 
         text-transform: uppercase; 
-        letter-spacing: 1px; 
     }
     
-    /* Panel Descanso */
     .active-panel { 
         background: #111; 
-        border: 2px solid var(--primary); 
+        border: 2px solid #0a84ff; 
         padding: 20px; 
         border-radius: 16px; 
         margin-bottom: 25px; 
@@ -153,14 +130,14 @@
     
     .rest-display { 
         font-size: 48px; 
-        font-family: 'Courier New', monospace; 
+        font-family: monospace; 
         text-align: center; 
         color: #fff; 
         margin: 15px 0; 
         font-weight: bold; 
     }
     
-    .rest-controls { display: flex; gap: 8px; justify-content: center; }
+    .rest-controls { display: flex; gap: 8px; }
     .rest-controls button { 
         background: #2c2c2e; 
         color: white; 
@@ -172,20 +149,18 @@
         cursor: pointer;
         font-size: 16px;
     }
-    
-    .rest-controls button:active { background: #3a3a3c; }
 
-    /* Finalizar & Editar */
     .finish-card { 
         display: none; 
         margin-top: 30px; 
-        background: var(--card); 
+        background: #1c1c1e; 
         padding: 20px; 
         border-radius: 20px; 
         border: 1px solid #444; 
     }
     
     .finish-card.visible { display: block; }
+    .finish-card h3 { color: #fff !important; margin-bottom: 15px; }
     
     label { 
         display: block; 
@@ -204,11 +179,10 @@
         border-radius: 10px; 
         font-size: 16px;
         -webkit-appearance: none;
-        appearance: none;
     }
     
     select { 
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Cpath fill='%23888' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
         background-repeat: no-repeat;
         background-position: right 12px center;
         padding-right: 35px;
@@ -216,7 +190,7 @@
     
     .btn-save { 
         width: 100%; 
-        background: var(--primary); 
+        background: #0a84ff; 
         color: white; 
         padding: 16px; 
         border: none; 
@@ -227,15 +201,12 @@
         cursor: pointer; 
     }
     
-    .btn-save:active { opacity: 0.8; }
     .btn-save.update { background: #ff9f0a; color: black; }
 
-    /* Preview Tomorrow */
     .tomorrow-box { 
         margin-top: 40px; 
         padding: 20px; 
         border-top: 1px solid #333; 
-        opacity: 0.8; 
     }
     
     .tomorrow-title { 
@@ -243,15 +214,12 @@
         text-transform: uppercase; 
         color: #888; 
         margin-bottom: 10px; 
-        letter-spacing: 1px; 
     }
     
     .mini-grid { 
         display: flex; 
         gap: 10px; 
-        overflow-x: auto; 
-        padding-bottom: 5px;
-        -webkit-overflow-scrolling: touch;
+        overflow-x: auto;
     }
     
     .mini-ex { 
@@ -270,7 +238,6 @@
         border: 1px solid #444; 
     }
 
-    /* Modal */
     .modal-overlay { 
         position: fixed; 
         top: 0; 
@@ -282,12 +249,10 @@
         display: none; 
         align-items: center; 
         justify-content: center; 
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
     }
     
     .modal-content { 
-        background: var(--card); 
+        background: #1c1c1e; 
         width: 85%; 
         max-width: 400px; 
         padding: 30px; 
@@ -295,8 +260,10 @@
         border: 1px solid #555; 
         text-align: center; 
         position: relative; 
-        box-shadow: 0 10px 30px rgba(0,0,0,0.8); 
     }
+    
+    .modal-content h2 { color: #fff !important; margin-bottom: 10px; }
+    .modal-content p { color: #ccc; font-size: 15px; line-height: 1.5; }
     
     .close-modal { 
         position: absolute; 
@@ -307,7 +274,6 @@
         background: none; 
         border: none; 
         cursor: pointer; 
-        line-height: 1;
     }
     
     .btn-video { 
@@ -325,12 +291,14 @@
     .hidden { display: none !important; }
     
     .card { 
-        background: var(--card); 
+        background: #1c1c1e; 
         padding: 20px; 
         border-radius: 16px; 
         margin-bottom: 20px; 
         border: 1px solid #333; 
     }
+    
+    .page h1 { color: #fff !important; margin-bottom: 20px; font-size: 24px; }
     
     .tab-bar { 
         position: fixed; 
@@ -340,11 +308,8 @@
         background: rgba(28,28,30,0.95); 
         display: flex; 
         padding: 15px; 
-        padding-bottom: calc(15px + env(safe-area-inset-bottom));
         border-top: 1px solid #333; 
         z-index: 100; 
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
     }
     
     .tab-btn { 
@@ -358,12 +323,11 @@
         padding: 10px; 
     }
     
-    .tab-btn.active { color: var(--primary); }
+    .tab-btn.active { color: #0a84ff; }
 
-    /* Botón añadir manual */
     .btn-add-manual { 
         width: 100%; 
-        background: var(--primary); 
+        background: #0a84ff; 
         color: white; 
         padding: 16px; 
         border: none; 
@@ -373,25 +337,13 @@
         cursor: pointer; 
         margin-bottom: 20px; 
     }
-    
-    .btn-add-manual:active { opacity: 0.8; }
-    
-    /* Mejoras iOS */
-    input:focus, select:focus, button:focus { outline: none; }
-    button { -webkit-appearance: none; }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-```
 
-</head>
-<body>
-
-```
 <div id="info-modal" class="modal-overlay">
     <div class="modal-content">
         <button class="close-modal" onclick="closeModal()">×</button>
-        <h2 id="m-title" style="margin-bottom:10px; color:white;">Nombre</h2>
-        <p id="m-desc" style="color:#ccc; font-size:15px; line-height:1.5;">Descripción...</p>
+        <h2 id="m-title">Nombre</h2>
+        <p id="m-desc">Descripción...</p>
         <a id="m-video" href="#" target="_blank" class="btn-video">📺 Ver en YouTube</a>
     </div>
 </div>
@@ -399,14 +351,14 @@
 <div id="p-train" class="page">
     <div class="top-bar">
         <div>
-            <div style="font-size:10px; color:#888;">HOY TOCA</div>
-            <h2 id="today-title" style="margin:5px 0; font-size:20px;">Cargando...</h2>
+            <small>HOY TOCA</small>
+            <h2 id="today-title">Cargando...</h2>
         </div>
         <div id="global-timer-ui" class="global-timer">00:00</div>
     </div>
 
     <div id="panel-active" class="active-panel">
-        <div style="text-align:center; font-size:11px; color:#888; letter-spacing:1px; text-transform:uppercase; margin-bottom:10px;">Tiempo de Descanso</div>
+        <div style="text-align:center; font-size:11px; color:#888; text-transform:uppercase; margin-bottom:10px;">Tiempo de Descanso</div>
         <div id="rest-display" class="rest-display">0:00</div>
         <div class="rest-controls">
             <button onclick="startRest(60)">60s</button>
@@ -427,7 +379,7 @@
     </div>
 
     <div id="finish-section" class="finish-card">
-        <h3 style="margin-bottom:15px; color:white;">Datos de la Sesión</h3>
+        <h3>Datos de la Sesión</h3>
         
         <label>Tipo de Entrenamiento</label>
         <select id="inp-type">
@@ -455,7 +407,7 @@
 </div>
 
 <div id="p-anl" class="page hidden">
-    <h1 style="margin-bottom:20px; font-size:24px;">Mi Progreso</h1>
+    <h1>Mi Progreso</h1>
     <div class="card"><canvas id="chart" height="150"></canvas></div>
     <div class="card" id="hist-list" style="padding-bottom:50px;"></div>
 </div>
@@ -481,7 +433,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // --- BASE DE DATOS ---
     const EXERCISES = {
         pushups: { 
             name: "Flexiones", rest: 60, 
@@ -531,13 +482,10 @@
         0: { type: "Trekking", keys: [] }
     };
 
-    // --- VARIABLES ---
     let userLevel = 1; 
     let weight = 72;
     let todayRoutine = {};
     let currentReps = 10;
-    
-    // Timers
     let startTime = 0;
     let globalInterval = null;
     let restInterval = null;
@@ -547,7 +495,6 @@
         const todayIdx = new Date().getDay();
         todayRoutine = SCHEDULE[todayIdx];
         
-        // Stats Usuario
         onSnapshot(doc(db, "userStats", "global"), (d) => {
             if(d.exists()) {
                 const data = d.data();
@@ -564,7 +511,6 @@
             renderTomorrow(todayIdx);
         });
 
-        // Historial
         onSnapshot(query(collection(db, "workouts"), orderBy("date", "desc"), limit(10)), (snap) => {
             const logs = snap.docs.map(d => ({id:d.id, ...d.data()}));
             renderHistory(logs);
@@ -582,10 +528,10 @@
         
         if (todayRoutine.type === "Trekking" || todayRoutine.type === "Aeróbico") {
             document.getElementById('start-btn-container').style.display = 'block';
-            container.innerHTML = `<div class="ex-card" style="padding:30px; display:block; text-align:center; border-color:var(--warning); color:var(--warning);">
+            container.innerHTML = `<div class="ex-card" style="padding:30px; display:block; text-align:center; border-color:#ffd60a;">
                 <div style="font-size:40px; margin-bottom:10px;">${todayRoutine.type==="Trekking"?"🏔️":"🏃"}</div>
-                <h3 style="color:var(--warning);">${todayRoutine.type}</h3>
-                <p style="color:#888; margin-top:10px;">Hoy no hay series. <br>Disfruta del movimiento y registra tu sesión al terminar.</p>
+                <h3 style="color:#ffd60a;">${todayRoutine.type}</h3>
+                <p style="color:#888; margin-top:10px;">Hoy no hay series.<br>Disfruta del movimiento y registra al terminar.</p>
             </div>`;
         } else {
             let html = "";
@@ -594,7 +540,7 @@
                 html += `
                     <div class="ex-card">
                         <img src="${ex.img}" class="ex-img" onclick="showInfo('${key}')">
-                        <div class="ex-hint">ℹ️ Toca foto</div>
+                        <div class="ex-hint">ℹ️ Toca</div>
                         <div class="ex-info">
                             <div class="ex-name">${ex.name}</div>
                             <div class="ex-meta">
@@ -616,7 +562,7 @@
         
         const container = document.getElementById('tmr-icons');
         if(tmrRoutine.keys.length === 0) {
-            container.innerHTML = `<span style="font-size:12px; color:#666;">Día de Cardio / Descanso Activo</span>`;
+            container.innerHTML = `<span style="font-size:12px; color:#666;">Día de Cardio / Descanso</span>`;
         } else {
             container.innerHTML = tmrRoutine.keys.map(k => `
                 <div class="mini-ex" onclick="showInfo('${k}')">
@@ -627,7 +573,6 @@
         }
     }
 
-    // --- MODAL INFO ---
     window.showInfo = (key) => {
         const ex = EXERCISES[key];
         if(!ex) return;
@@ -641,11 +586,8 @@
         document.getElementById('info-modal').style.display = 'none';
     };
 
-    // --- TIMER LOGIC ---
     window.startWorkout = () => {
-        const startContainer = document.getElementById('start-btn-container');
-        startContainer.style.display = 'none';
-        
+        document.getElementById('start-btn-container').style.display = 'none';
         document.getElementById('panel-active').classList.add('visible');
         document.getElementById('finish-section').classList.add('visible');
         document.getElementById('global-timer-ui').classList.add('active');
@@ -682,20 +624,19 @@
             if(left <= 0) {
                 clearInterval(restInterval);
                 display.innerText = "¡VAMOS!";
-                display.style.color = "var(--accent)";
+                display.style.color = "#32d74b";
                 if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
             }
         }, 1000);
     };
 
-    // --- SAVE / EDIT ---
     window.saveSession = async () => {
         const rpe = document.getElementById('inp-rpe').value;
         const w = document.getElementById('inp-weight').value;
         const type = document.getElementById('inp-type').value;
 
         if(!rpe || !w || !type) {
-            alert("Por favor completa todos los campos (Tipo, Peso y RPE).");
+            alert("Por favor completa todos los campos.");
             return;
         }
 
@@ -704,12 +645,7 @@
         btn.innerText = "Guardando...";
 
         try {
-            let duration = 0;
-            if(startTime > 0) {
-                duration = Math.ceil((Date.now() - startTime) / 60000);
-            } else {
-                duration = 45;
-            }
+            let duration = startTime > 0 ? Math.ceil((Date.now() - startTime) / 60000) : 45;
 
             let newLvl = userLevel;
             if(["Torso", "Pierna", "Full Body"].includes(type)) {
@@ -728,7 +664,7 @@
 
             if(editingId) {
                 await updateDoc(doc(db, "workouts", editingId), data);
-                alert("Entreno actualizado correctamente");
+                alert("Entreno actualizado");
                 editingId = null;
             } else {
                 await addDoc(collection(db, "workouts"), data);
@@ -738,163 +674,37 @@
             
             location.reload();
         } catch(error) {
-            console.error("Error al guardar:", error);
-            alert("Error al guardar. Revisa la consola.");
+            console.error("Error:", error);
+            alert("Error al guardar");
             btn.disabled = false;
-            btn.innerText = editingId ? "ACTUALIZAR REGISTRO" : "GUARDAR SESIÓN";
+            btn.innerText = editingId ? "ACTUALIZAR" : "GUARDAR";
         }
     };
 
-    // --- AÑADIR MANUALMENTE ---
     window.showManualForm = () => {
         switchTab('train');
-        
         editingId = null;
         document.getElementById('start-btn-container').style.display = 'none';
         document.getElementById('finish-section').classList.add('visible');
         document.getElementById('panel-active').classList.remove('visible');
-        
         document.getElementById('inp-weight').value = weight;
         document.getElementById('inp-rpe').value = '';
         document.getElementById('inp-type').value = todayRoutine.type;
-        
         startTime = 0;
         if(globalInterval) clearInterval(globalInterval);
         document.getElementById('global-timer-ui').innerText = '00:00';
         document.getElementById('global-timer-ui').classList.remove('active');
-        
-        const btn = document.getElementById('btn-finish');
-        btn.innerText = "GUARDAR SESIÓN MANUAL";
-        btn.classList.remove('update');
+        document.getElementById('btn-finish').innerText = "GUARDAR SESIÓN MANUAL";
+        document.getElementById('btn-finish').classList.remove('update');
         document.getElementById('today-title').innerText = "Registro Manual";
-        
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    // --- HISTORY & EDIT UI ---
     function renderHistory(logs) {
         const addBtn = `<button class="btn-add-manual" onclick="showManualForm()">+ AÑADIR SESIÓN MANUALMENTE</button>`;
         
         const list = logs.map(l => `
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:15px 0; border-bottom:1px solid #333; font-size:13px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:15px 0; border-bottom:1px solid #333;">
                 <div>
                     <b style="font-size:14px; color:white">${l.type}</b>
-                    <br><span style="color:#666">${new Date(l.date).toLocaleDateString('es-ES')} · ${l.duration} min · RPE ${l.rpe}</span>
-                </div>
-                <div>
-                    <button onclick='editLog("${l.id}", "${l.type}", ${l.weight}, ${l.rpe})' style="background:none; border:none; margin-right:15px; font-size:18px; cursor:pointer;">✏️</button>
-                    <button onclick="deleteLog('${l.id}')" style="color:#ff453a; background:none; border:none; font-size:18px; cursor:pointer;">✕</button>
-                </div>
-            </div>
-        `).join('');
-        
-        document.getElementById('hist-list').innerHTML = addBtn + list;
-    }
-
-    window.editLog = (id, type, w, rpe) => {
-        switchTab('train');
-        editingId = id;
-        
-        document.getElementById('start-btn-container').style.display = 'none';
-        document.getElementById('finish-section').classList.add('visible');
-        document.getElementById('panel-active').classList.remove('visible');
-        
-        document.getElementById('inp-weight').value = w;
-        document.getElementById('inp-rpe').value = rpe;
-        document.getElementById('inp-type').value = type;
-        
-        startTime = 0;
-        if(globalInterval) clearInterval(globalInterval);
-        document.getElementById('global-timer-ui').innerText = '00:00';
-        document.getElementById('global-timer-ui').classList.remove('active');
-        
-        const btn = document.getElementById('btn-finish');
-        btn.innerText = "ACTUALIZAR REGISTRO";
-        btn.classList.add('update');
-        document.getElementById('today-title').innerText = "Editando Registro";
-        
-        window.scrollTo({ top: 300, behavior: 'smooth' });
-    };
-
-    window.deleteLog = async(id) => { 
-        if(confirm("¿Seguro que quieres borrar este registro?")) {
-            try {
-                await deleteDoc(doc(db,"workouts",id));
-            } catch(error) {
-                console.error("Error al borrar:", error);
-                alert("Error al borrar el registro");
-            }
-        }
-    };
-
-    let chartInstance;
-    function updateChart(logs) {
-        const ctx = document.getElementById('chart');
-        if(!ctx) return;
-        
-        const data = [...logs].reverse();
-        if(chartInstance) chartInstance.destroy();
-        
-        chartInstance = new Chart(ctx.getContext('2d'), {
-            type: 'line',
-            data: {
-                labels: data.map(l => {
-                    const d = new Date(l.date);
-                    return d.getDate() + '/' + (d.getMonth()+1);
-                }),
-                datasets: [{ 
-                    label: 'Nivel', 
-                    data: data.map(l => l.level || 1), 
-                    borderColor: '#32d74b', 
-                    backgroundColor: 'rgba(50, 215, 75, 0.1)',
-                    fill: true, 
-                    tension: 0.3, 
-                    stepped: true,
-                    pointBackgroundColor: '#32d74b',
-                    pointBorderColor: '#32d74b',
-                    pointRadius: 4
-                }]
-            },
-            options: { 
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {display: false}
-                }, 
-                scales: {
-                    x: {
-                        display: true, 
-                        grid: {color: '#333'},
-                        ticks: {color: '#888'}
-                    }, 
-                    y: {
-                        display: true, 
-                        grid: {color: '#333'},
-                        ticks: {color: '#888'},
-                        beginAtZero: true
-                    }
-                } 
-            }
-        });
-    }
-
-    window.switchTab = (t) => {
-        document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
-        document.getElementById('p-'+t).classList.remove('hidden');
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        
-        const tabs = document.querySelectorAll('.tab-btn');
-        tabs.forEach(btn => {
-            if((t === 'train' && btn.textContent.includes('ENTRENO')) ||
-               (t === 'anl' && btn.textContent.includes('DATOS'))) {
-                btn.classList.add('active');
-            }
-        });
-    };
-
-    window.addEventListener('load', initApp);
-</script>
 ```
-
-</body>
-</html>

@@ -492,30 +492,66 @@
     let editingId = null; 
 
     window.initApp = async () => {
+        console.log("🚀 Iniciando app...");
         const todayIdx = new Date().getDay();
         todayRoutine = SCHEDULE[todayIdx];
         
-        onSnapshot(doc(db, "userStats", "global"), (d) => {
-            if(d.exists()) {
-                const data = d.data();
-                userLevel = data.level || 1; 
-                weight = data.weight || 72;
-                currentReps = userLevel === 1 ? 10 : (userLevel === 2 ? 12 : 15);
+        try {
+            // Intentar cargar stats del usuario
+            onSnapshot(doc(db, "userStats", "global"), async (d) => {
+                console.log("📊 Stats cargadas:", d.exists());
+                
+                if(d.exists()) {
+                    const data = d.data();
+                    userLevel = data.level || 1; 
+                    weight = data.weight || 72;
+                    currentReps = userLevel === 1 ? 10 : (userLevel === 2 ? 12 : 15);
+                } else {
+                    // Crear documento inicial si no existe
+                    console.log("⚠️ Creando documento inicial...");
+                    await setDoc(doc(db, "userStats", "global"), {
+                        level: 1,
+                        weight: 72
+                    });
+                    userLevel = 1;
+                    weight = 72;
+                    currentReps = 10;
+                }
                 
                 const weightInput = document.getElementById('inp-weight');
                 if(weightInput && !weightInput.value) {
                     weightInput.value = weight;
                 }
-            }
+                
+                renderSession();
+                renderTomorrow(todayIdx);
+            }, (error) => {
+                console.error("❌ Error al cargar stats:", error);
+                alert("Error de conexión con Firebase. Revisa la consola.");
+            });
+
+            // Cargar historial
+            onSnapshot(query(collection(db, "workouts"), orderBy("date", "desc"), limit(10)), (snap) => {
+                console.log("📝 Workouts cargados:", snap.docs.length);
+                const logs = snap.docs.map(d => ({id:d.id, ...d.data()}));
+                renderHistory(logs);
+                updateChart(logs);
+            }, (error) => {
+                console.error("❌ Error al cargar workouts:", error);
+                // Mostrar historial vacío
+                renderHistory([]);
+                updateChart([]);
+            });
+            
+        } catch(error) {
+            console.error("❌ Error fatal en initApp:", error);
+            alert("Error al inicializar la app. Revisa la configuración de Firebase.");
+            
+            // Renderizar de todos modos con valores por defecto
             renderSession();
             renderTomorrow(todayIdx);
-        });
-
-        onSnapshot(query(collection(db, "workouts"), orderBy("date", "desc"), limit(10)), (snap) => {
-            const logs = snap.docs.map(d => ({id:d.id, ...d.data()}));
-            renderHistory(logs);
-            updateChart(logs);
-        });
+            renderHistory([]);
+        }
     };
 
     function renderSession() {
@@ -707,4 +743,115 @@
             <div style="display:flex; justify-content:space-between; align-items:center; padding:15px 0; border-bottom:1px solid #333;">
                 <div>
                     <b style="font-size:14px; color:white">${l.type}</b>
+                    <br><span style="color:#666">${new Date(l.date).toLocaleDateString('es-ES')} · ${l.duration} min · RPE ${l.rpe}</span>
+                </div>
+                <div>
+                    <button onclick='editLog("${l.id}", "${l.type}", ${l.weight}, ${l.rpe})' style="background:none; border:none; margin-right:15px; font-size:18px; cursor:pointer;">✏️</button>
+                    <button onclick="deleteLog('${l.id}')" style="color:#ff453a; background:none; border:none; font-size:18px; cursor:pointer;">✕</button>
+                </div>
+            </div>
+        `).join('');
+        
+        document.getElementById('hist-list').innerHTML = addBtn + list;
+    }
+
+    window.editLog = (id, type, w, rpe) => {
+        switchTab('train');
+        editingId = id;
+        document.getElementById('start-btn-container').style.display = 'none';
+        document.getElementById('finish-section').classList.add('visible');
+        document.getElementById('panel-active').classList.remove('visible');
+        document.getElementById('inp-weight').value = w;
+        document.getElementById('inp-rpe').value = rpe;
+        document.getElementById('inp-type').value = type;
+        startTime = 0;
+        if(globalInterval) clearInterval(globalInterval);
+        document.getElementById('global-timer-ui').innerText = '00:00';
+        document.getElementById('global-timer-ui').classList.remove('active');
+        document.getElementById('btn-finish').innerText = "ACTUALIZAR REGISTRO";
+        document.getElementById('btn-finish').classList.add('update');
+        document.getElementById('today-title').innerText = "Editando Registro";
+        window.scrollTo({ top: 300, behavior: 'smooth' });
+    };
+
+    window.deleteLog = async(id) => { 
+        if(confirm("¿Seguro que quieres borrar este registro?")) {
+            try {
+                await deleteDoc(doc(db,"workouts",id));
+            } catch(error) {
+                console.error("Error:", error);
+                alert("Error al borrar");
+            }
+        }
+    };
+
+    let chartInstance;
+    function updateChart(logs) {
+        const ctx = document.getElementById('chart');
+        if(!ctx) return;
+        
+        const data = [...logs].reverse();
+        if(chartInstance) chartInstance.destroy();
+        
+        chartInstance = new Chart(ctx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: data.map(l => {
+                    const d = new Date(l.date);
+                    return d.getDate() + '/' + (d.getMonth()+1);
+                }),
+                datasets: [{ 
+                    label: 'Nivel', 
+                    data: data.map(l => l.level || 1), 
+                    borderColor: '#32d74b', 
+                    backgroundColor: 'rgba(50, 215, 75, 0.1)',
+                    fill: true, 
+                    tension: 0.3, 
+                    stepped: true,
+                    pointBackgroundColor: '#32d74b',
+                    pointRadius: 4
+                }]
+            },
+            options: { 
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {display: false}
+                }, 
+                scales: {
+                    x: {
+                        display: true, 
+                        grid: {color: '#333'},
+                        ticks: {color: '#888'}
+                    }, 
+                    y: {
+                        display: true, 
+                        grid: {color: '#333'},
+                        ticks: {color: '#888'},
+                        beginAtZero: true
+                    }
+                } 
+            }
+        });
+    }
+
+    window.switchTab = (t) => {
+        document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+        document.getElementById('p-'+t).classList.remove('hidden');
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        
+        const tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach(btn => {
+            if((t === 'train' && btn.textContent.includes('ENTRENO')) ||
+               (t === 'anl' && btn.textContent.includes('DATOS'))) {
+                btn.classList.add('active');
+            }
+        });
+    };
+
+    window.addEventListener('load', initApp);
+</script>
 ```
+
+</body>
+</html>

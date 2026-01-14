@@ -3,14 +3,472 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>BioHacker v13 Final</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, updateDoc, collection, query, orderBy, limit, onSnapshot, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    <style>
+        /* Reset y Variables */
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root { 
+            --primary: #0a84ff; 
+            --bg: #000; 
+            --card: #1c1c1e; 
+            --text: #fff; 
+            --accent: #32d74b; 
+            --warning: #ffd60a; 
+        }
 
 ```
+    html, body { 
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+        background: var(--bg) !important; 
+        color: var(--text) !important; 
+        margin: 0; 
+        padding: 0;
+        min-height: 100vh;
+        overflow-x: hidden;
+    }
+    
+    body { 
+        padding: 15px; 
+        padding-bottom: 120px; 
+        padding-top: env(safe-area-inset-top);
+    }
+    
+    /* Header & Timer */
+    .top-bar { 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        margin-bottom: 20px; 
+        position: sticky; 
+        top: 0; 
+        background: var(--bg); 
+        z-index: 50; 
+        padding: 10px 0; 
+        border-bottom: 1px solid #222;
+    }
+    
+    .global-timer { 
+        font-family: 'Courier New', monospace; 
+        font-size: 24px; 
+        font-weight: 700; 
+        color: #666; 
+        background: #111; 
+        padding: 8px 16px; 
+        border-radius: 8px; 
+        border: 1px solid #333; 
+        min-width: 90px; 
+        text-align: center; 
+    }
+    
+    .global-timer.active { 
+        color: var(--primary); 
+        border-color: var(--primary); 
+        animation: pulse 2s infinite; 
+    }
+    
+    @keyframes pulse { 
+        0%, 100% {box-shadow: 0 0 0 rgba(10,132,255,0);} 
+        50% {box-shadow: 0 0 15px rgba(10,132,255,0.3);} 
+    }
+
+    h1, h2, h3 { color: var(--text) !important; }
+    
+    /* Ejercicios */
+    .ex-card { 
+        display: flex; 
+        align-items: center; 
+        background: var(--card); 
+        margin-bottom: 12px; 
+        border-radius: 12px; 
+        overflow: hidden; 
+        padding-right: 15px; 
+        border: 1px solid #333; 
+        position: relative; 
+    }
+    
+    .ex-img { 
+        width: 85px; 
+        height: 85px; 
+        object-fit: cover; 
+        margin-right: 15px; 
+        cursor: pointer; 
+        flex-shrink: 0;
+    }
+    
+    .ex-hint { 
+        position: absolute; 
+        bottom: 5px; 
+        left: 5px; 
+        font-size: 9px; 
+        background: rgba(0,0,0,0.8); 
+        padding: 3px 6px; 
+        border-radius: 4px; 
+        pointer-events: none; 
+        color: white; 
+    }
+    
+    .ex-info { flex: 1; }
+    .ex-name { font-weight: bold; font-size: 16px; margin-bottom: 4px; color: var(--text); }
+    .ex-meta { font-size: 13px; color: #888; display: flex; gap: 10px; }
+    .tag-rest { color: var(--warning); font-weight: 600; }
+    
+    /* Botón Start (Flotante) */
+    .sticky-action { 
+        position: fixed; 
+        bottom: calc(80px + env(safe-area-inset-bottom)); 
+        left: 15px; 
+        right: 15px; 
+        z-index: 90; 
+    }
+    
+    .btn-start { 
+        width: 100%; 
+        background: var(--accent); 
+        color: #000; 
+        font-weight: 900; 
+        padding: 18px; 
+        border-radius: 16px; 
+        border: none; 
+        font-size: 18px; 
+        box-shadow: 0 5px 20px rgba(50, 215, 75, 0.4); 
+        cursor: pointer; 
+        text-transform: uppercase; 
+        letter-spacing: 1px; 
+    }
+    
+    /* Panel Descanso */
+    .active-panel { 
+        background: #111; 
+        border: 2px solid var(--primary); 
+        padding: 20px; 
+        border-radius: 16px; 
+        margin-bottom: 25px; 
+        display: none; 
+    }
+    
+    .active-panel.visible { display: block; }
+    
+    .rest-display { 
+        font-size: 48px; 
+        font-family: 'Courier New', monospace; 
+        text-align: center; 
+        color: #fff; 
+        margin: 15px 0; 
+        font-weight: bold; 
+    }
+    
+    .rest-controls { display: flex; gap: 8px; justify-content: center; }
+    .rest-controls button { 
+        background: #2c2c2e; 
+        color: white; 
+        border: 1px solid #555; 
+        padding: 12px; 
+        border-radius: 10px; 
+        flex: 1; 
+        font-weight: bold; 
+        cursor: pointer;
+        font-size: 16px;
+    }
+    
+    .rest-controls button:active { background: #3a3a3c; }
+
+    /* Finalizar & Editar */
+    .finish-card { 
+        display: none; 
+        margin-top: 30px; 
+        background: var(--card); 
+        padding: 20px; 
+        border-radius: 20px; 
+        border: 1px solid #444; 
+    }
+    
+    .finish-card.visible { display: block; }
+    
+    label { 
+        display: block; 
+        font-size: 12px; 
+        color: #888; 
+        margin-top: 15px; 
+        margin-bottom: 5px;
+    }
+    
+    input, select { 
+        width: 100%; 
+        padding: 14px; 
+        background: #000; 
+        border: 1px solid #555; 
+        color: #fff; 
+        border-radius: 10px; 
+        font-size: 16px;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+    
+    select { 
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        padding-right: 35px;
+    }
+    
+    .btn-save { 
+        width: 100%; 
+        background: var(--primary); 
+        color: white; 
+        padding: 16px; 
+        border: none; 
+        border-radius: 12px; 
+        font-weight: bold; 
+        margin-top: 20px; 
+        font-size: 16px; 
+        cursor: pointer; 
+    }
+    
+    .btn-save:active { opacity: 0.8; }
+    .btn-save.update { background: #ff9f0a; color: black; }
+
+    /* Preview Tomorrow */
+    .tomorrow-box { 
+        margin-top: 40px; 
+        padding: 20px; 
+        border-top: 1px solid #333; 
+        opacity: 0.8; 
+    }
+    
+    .tomorrow-title { 
+        font-size: 12px; 
+        text-transform: uppercase; 
+        color: #888; 
+        margin-bottom: 10px; 
+        letter-spacing: 1px; 
+    }
+    
+    .mini-grid { 
+        display: flex; 
+        gap: 10px; 
+        overflow-x: auto; 
+        padding-bottom: 5px;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .mini-ex { 
+        flex: 0 0 60px; 
+        text-align: center; 
+        font-size: 10px; 
+        cursor: pointer; 
+    }
+    
+    .mini-img { 
+        width: 50px; 
+        height: 50px; 
+        border-radius: 10px; 
+        object-fit: cover; 
+        margin-bottom: 5px; 
+        border: 1px solid #444; 
+    }
+
+    /* Modal */
+    .modal-overlay { 
+        position: fixed; 
+        top: 0; 
+        left: 0; 
+        right: 0; 
+        bottom: 0; 
+        background: rgba(0,0,0,0.95); 
+        z-index: 200; 
+        display: none; 
+        align-items: center; 
+        justify-content: center; 
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+    
+    .modal-content { 
+        background: var(--card); 
+        width: 85%; 
+        max-width: 400px; 
+        padding: 30px; 
+        border-radius: 20px; 
+        border: 1px solid #555; 
+        text-align: center; 
+        position: relative; 
+        box-shadow: 0 10px 30px rgba(0,0,0,0.8); 
+    }
+    
+    .close-modal { 
+        position: absolute; 
+        top: 15px; 
+        right: 20px; 
+        font-size: 32px; 
+        color: #888; 
+        background: none; 
+        border: none; 
+        cursor: pointer; 
+        line-height: 1;
+    }
+    
+    .btn-video { 
+        display: block; 
+        width: 100%; 
+        background: #ff0000; 
+        color: white; 
+        text-decoration: none; 
+        padding: 14px; 
+        border-radius: 12px; 
+        margin-top: 20px; 
+        font-weight: bold; 
+    }
+
+    .hidden { display: none !important; }
+    
+    .card { 
+        background: var(--card); 
+        padding: 20px; 
+        border-radius: 16px; 
+        margin-bottom: 20px; 
+        border: 1px solid #333; 
+    }
+    
+    .tab-bar { 
+        position: fixed; 
+        bottom: 0; 
+        left: 0; 
+        right: 0; 
+        background: rgba(28,28,30,0.95); 
+        display: flex; 
+        padding: 15px; 
+        padding-bottom: calc(15px + env(safe-area-inset-bottom));
+        border-top: 1px solid #333; 
+        z-index: 100; 
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+    }
+    
+    .tab-btn { 
+        flex: 1; 
+        background: none; 
+        border: none; 
+        color: #666; 
+        font-weight: 700; 
+        font-size: 11px; 
+        cursor: pointer; 
+        padding: 10px; 
+    }
+    
+    .tab-btn.active { color: var(--primary); }
+
+    /* Botón añadir manual */
+    .btn-add-manual { 
+        width: 100%; 
+        background: var(--primary); 
+        color: white; 
+        padding: 16px; 
+        border: none; 
+        border-radius: 12px; 
+        font-weight: bold; 
+        font-size: 16px; 
+        cursor: pointer; 
+        margin-bottom: 20px; 
+    }
+    
+    .btn-add-manual:active { opacity: 0.8; }
+    
+    /* Mejoras iOS */
+    input:focus, select:focus, button:focus { outline: none; }
+    button { -webkit-appearance: none; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+```
+
+</head>
+<body>
+
+```
+<div id="info-modal" class="modal-overlay">
+    <div class="modal-content">
+        <button class="close-modal" onclick="closeModal()">×</button>
+        <h2 id="m-title" style="margin-bottom:10px; color:white;">Nombre</h2>
+        <p id="m-desc" style="color:#ccc; font-size:15px; line-height:1.5;">Descripción...</p>
+        <a id="m-video" href="#" target="_blank" class="btn-video">📺 Ver en YouTube</a>
+    </div>
+</div>
+
+<div id="p-train" class="page">
+    <div class="top-bar">
+        <div>
+            <div style="font-size:10px; color:#888;">HOY TOCA</div>
+            <h2 id="today-title" style="margin:5px 0; font-size:20px;">Cargando...</h2>
+        </div>
+        <div id="global-timer-ui" class="global-timer">00:00</div>
+    </div>
+
+    <div id="panel-active" class="active-panel">
+        <div style="text-align:center; font-size:11px; color:#888; letter-spacing:1px; text-transform:uppercase; margin-bottom:10px;">Tiempo de Descanso</div>
+        <div id="rest-display" class="rest-display">0:00</div>
+        <div class="rest-controls">
+            <button onclick="startRest(60)">60s</button>
+            <button onclick="startRest(90)">90s</button>
+            <button onclick="startRest(120)">2m</button>
+        </div>
+    </div>
+
+    <div id="session-content"></div>
+
+    <div class="tomorrow-box">
+        <div class="tomorrow-title">👀 Previsión para Mañana: <span id="tmr-type" style="color:white; font-weight:bold;">...</span></div>
+        <div id="tmr-icons" class="mini-grid"></div>
+    </div>
+
+    <div id="start-btn-container" class="sticky-action">
+        <button class="btn-start" onclick="startWorkout()">▶ COMENZAR SESIÓN</button>
+    </div>
+
+    <div id="finish-section" class="finish-card">
+        <h3 style="margin-bottom:15px; color:white;">Datos de la Sesión</h3>
+        
+        <label>Tipo de Entrenamiento</label>
+        <select id="inp-type">
+            <option value="Torso">Torso</option>
+            <option value="Pierna">Pierna</option>
+            <option value="Full Body">Full Body</option>
+            <option value="Aeróbico">Aeróbico</option>
+            <option value="Trekking">Trekking</option>
+        </select>
+
+        <label>Peso Corporal (Kg)</label>
+        <input type="number" id="inp-weight" step="0.1" placeholder="Ej: 75.5">
+
+        <label>Sensación (RPE)</label>
+        <select id="inp-rpe">
+            <option value="">¿Cómo fue?</option>
+            <option value="6">6 - Fácil (Subir nivel)</option>
+            <option value="7">7 - Normal</option>
+            <option value="8">8 - Duro</option>
+            <option value="9">9 - Muy Duro (Bajar nivel)</option>
+        </select>
+        
+        <button id="btn-finish" class="btn-save" onclick="saveSession()">GUARDAR SESIÓN</button>
+    </div>
+</div>
+
+<div id="p-anl" class="page hidden">
+    <h1 style="margin-bottom:20px; font-size:24px;">Mi Progreso</h1>
+    <div class="card"><canvas id="chart" height="150"></canvas></div>
+    <div class="card" id="hist-list" style="padding-bottom:50px;"></div>
+</div>
+
+<nav class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('train')">ENTRENO</button>
+    <button class="tab-btn" onclick="switchTab('anl')">DATOS</button>
+</nav>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, doc, setDoc, updateDoc, collection, query, orderBy, limit, onSnapshot, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
     const firebaseConfig = {
         apiKey: "AIzaSyD1xdMdcbHXgGAL008bdmq22SNgLVcC9jM",
         authDomain: "appweb-entrenamiento.firebaseapp.com",
@@ -73,70 +531,9 @@
         0: { type: "Trekking", keys: [] }
     };
 
-    // --- ESTILOS ---
-    const styles = `
-        :root { --primary: #0a84ff; --bg: #000; --card: #1c1c1e; --text: #fff; --accent: #32d74b; --warning: #ffd60a; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; padding-bottom: 120px; }
-        
-        /* Header & Timer */
-        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; position: sticky; top: 0; background: var(--bg); z-index: 50; padding: 10px 0; border-bottom: 1px solid #111; }
-        .global-timer { font-family: monospace; font-size: 24px; font-weight: 700; color: #666; background: #111; padding: 8px 16px; border-radius: 8px; border: 1px solid #222; min-width: 80px; text-align: center; }
-        .global-timer.active { color: var(--primary); border-color: var(--primary); animation: pulse 2s infinite; }
-        @keyframes pulse { 0% {box-shadow: 0 0 0 rgba(10,132,255,0);} 50% {box-shadow: 0 0 15px rgba(10,132,255,0.2);} 100% {box-shadow: 0 0 0 rgba(10,132,255,0);} }
-
-        /* Ejercicios */
-        .ex-card { display: flex; align-items: center; background: #1c1c1e; margin-bottom: 12px; border-radius: 12px; overflow: hidden; padding-right: 15px; border: 1px solid #333; position: relative; }
-        .ex-img { width: 85px; height: 85px; object-fit: cover; margin-right: 15px; cursor: pointer; }
-        .ex-hint { position: absolute; bottom: 5px; left: 5px; font-size: 9px; background: rgba(0,0,0,0.7); padding: 2px 5px; border-radius: 4px; pointer-events: none; color: white; }
-        .ex-info { flex: 1; }
-        .ex-name { font-weight: bold; font-size: 16px; margin-bottom: 4px; }
-        .ex-meta { font-size: 13px; color: #888; display: flex; gap: 10px; }
-        .tag-rest { color: var(--warning); font-weight: 600; }
-        
-        /* Botón Start (Flotante) */
-        .sticky-action { position: fixed; bottom: 80px; left: 15px; right: 15px; z-index: 90; }
-        .btn-start { width: 100%; background: var(--accent); color: #000; font-weight: 900; padding: 18px; border-radius: 16px; border: none; font-size: 18px; box-shadow: 0 5px 20px rgba(50, 215, 75, 0.4); cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
-        
-        /* Panel Descanso */
-        .active-panel { background: #111; border: 1px solid var(--primary); padding: 20px; border-radius: 16px; margin-bottom: 25px; display: none; }
-        .active-panel.visible { display: block; }
-        .rest-display { font-size: 40px; font-family: monospace; text-align: center; color: #fff; margin: 15px 0; font-weight: bold; }
-        .rest-controls { display: flex; gap: 8px; justify-content: center; }
-        .rest-controls button { background: #2c2c2e; color: white; border: 1px solid #444; padding: 12px; border-radius: 10px; flex: 1; font-weight: bold; cursor: pointer; }
-
-        /* Finalizar & Editar */
-        .finish-card { display: none; margin-top: 30px; background: #1c1c1e; padding: 20px; border-radius: 20px; border: 1px solid #333; }
-        .finish-card.visible { display: block; }
-        input, select { width: 100%; padding: 14px; background: #000; border: 1px solid #444; color: #fff; border-radius: 10px; margin-top: 10px; box-sizing: border-box; font-size: 16px; }
-        .btn-save { width: 100%; background: var(--primary); color: white; padding: 16px; border: none; border-radius: 12px; font-weight: bold; margin-top: 15px; font-size: 16px; cursor: pointer; }
-        .btn-save.update { background: #ff9f0a; color: black; }
-
-        /* Preview Tomorrow */
-        .tomorrow-box { margin-top: 40px; padding: 20px; border-top: 1px solid #333; opacity: 0.8; }
-        .tomorrow-title { font-size: 12px; text-transform: uppercase; color: #888; margin-bottom: 10px; letter-spacing: 1px; }
-        .mini-grid { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; }
-        .mini-ex { flex: 0 0 60px; text-align: center; font-size: 10px; cursor: pointer; }
-        .mini-img { width: 50px; height: 50px; border-radius: 10px; object-fit: cover; margin-bottom: 5px; border: 1px solid #444; }
-
-        /* Modal */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 200; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-        .modal-content { background: #1c1c1e; width: 85%; max-width: 400px; padding: 30px; border-radius: 20px; border: 1px solid #444; text-align: center; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .close-modal { position: absolute; top: 15px; right: 20px; font-size: 28px; color: #888; background: none; border: none; cursor: pointer; }
-        .btn-video { display: block; width: 100%; background: #ff0000; color: white; text-decoration: none; padding: 14px; border-radius: 12px; margin-top: 20px; font-weight: bold; }
-
-        .hidden { display: none !important; }
-        .card { background: #1c1c1e; padding: 20px; border-radius: 16px; margin-bottom: 20px; border: 1px solid #333; }
-        .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(20,20,20,0.95); display: flex; padding: 15px; border-top: 1px solid #333; z-index: 100; backdrop-filter: blur(10px); }
-        .tab-btn { flex: 1; background: none; border: none; color: #666; font-weight: 700; font-size: 11px; cursor: pointer; padding: 10px; }
-        .tab-btn.active { color: var(--primary); }
-
-        /* Botón añadir manual */
-        .btn-add-manual { width: 100%; background: var(--primary); color: white; padding: 16px; border: none; border-radius: 12px; font-weight: bold; font-size: 16px; cursor: pointer; margin-bottom: 20px; }
-    `;
-    const styleSheet = document.createElement("style"); styleSheet.innerText = styles; document.head.appendChild(styleSheet);
-
     // --- VARIABLES ---
-    let userLevel = 1; let weight = 72;
+    let userLevel = 1; 
+    let weight = 72;
     let todayRoutine = {};
     let currentReps = 10;
     
@@ -158,7 +555,6 @@
                 weight = data.weight || 72;
                 currentReps = userLevel === 1 ? 10 : (userLevel === 2 ? 12 : 15);
                 
-                // Pre-llenar peso en el formulario
                 const weightInput = document.getElementById('inp-weight');
                 if(weightInput && !weightInput.value) {
                     weightInput.value = weight;
@@ -179,18 +575,16 @@
     function renderSession() {
         document.getElementById('today-title').innerText = todayRoutine.type;
         
-        // Pre-llenar el selector de tipo con lo que toca hoy
         const typeSelect = document.getElementById('inp-type');
         if(typeSelect) typeSelect.value = todayRoutine.type;
 
         const container = document.getElementById('session-content');
         
         if (todayRoutine.type === "Trekking" || todayRoutine.type === "Aeróbico") {
-            // CAMBIO: Mostrar el botón de start también en días de cardio
             document.getElementById('start-btn-container').style.display = 'block';
             container.innerHTML = `<div class="ex-card" style="padding:30px; display:block; text-align:center; border-color:var(--warning); color:var(--warning);">
                 <div style="font-size:40px; margin-bottom:10px;">${todayRoutine.type==="Trekking"?"🏔️":"🏃"}</div>
-                <h3>${todayRoutine.type}</h3>
+                <h3 style="color:var(--warning);">${todayRoutine.type}</h3>
                 <p style="color:#888; margin-top:10px;">Hoy no hay series. <br>Disfruta del movimiento y registra tu sesión al terminar.</p>
             </div>`;
         } else {
@@ -227,7 +621,7 @@
             container.innerHTML = tmrRoutine.keys.map(k => `
                 <div class="mini-ex" onclick="showInfo('${k}')">
                     <img src="${EXERCISES[k].img}" class="mini-img">
-                    <div>${EXERCISES[k].name.split(' ')[0]}</div>
+                    <div style="color:#ccc;">${EXERCISES[k].name.split(' ')[0]}</div>
                 </div>
             `).join('');
         }
@@ -242,11 +636,13 @@
         document.getElementById('m-video').href = ex.video;
         document.getElementById('info-modal').style.display = 'flex';
     };
-    window.closeModal = () => document.getElementById('info-modal').style.display = 'none';
+    
+    window.closeModal = () => {
+        document.getElementById('info-modal').style.display = 'none';
+    };
 
     // --- TIMER LOGIC ---
     window.startWorkout = () => {
-        // CAMBIO: Ocultar botón correctamente
         const startContainer = document.getElementById('start-btn-container');
         startContainer.style.display = 'none';
         
@@ -265,7 +661,6 @@
                 `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
         }, 1000);
         
-        // Scroll para mostrar herramientas
         setTimeout(() => {
             document.getElementById('panel-active').scrollIntoView({behavior: "smooth", block: "center"});
         }, 300);
@@ -309,7 +704,6 @@
         btn.innerText = "Guardando...";
 
         try {
-            // Calcular duración
             let duration = 0;
             if(startTime > 0) {
                 duration = Math.ceil((Date.now() - startTime) / 60000);
@@ -317,7 +711,6 @@
                 duration = 45;
             }
 
-            // Coach Logic (Solo si es fuerza)
             let newLvl = userLevel;
             if(["Torso", "Pierna", "Full Body"].includes(type)) {
                 if(parseInt(rpe) <= 6) newLvl++;
@@ -356,24 +749,20 @@
     window.showManualForm = () => {
         switchTab('train');
         
-        // Reset estado
         editingId = null;
         document.getElementById('start-btn-container').style.display = 'none';
         document.getElementById('finish-section').classList.add('visible');
         document.getElementById('panel-active').classList.remove('visible');
         
-        // Limpiar formulario
         document.getElementById('inp-weight').value = weight;
         document.getElementById('inp-rpe').value = '';
         document.getElementById('inp-type').value = todayRoutine.type;
         
-        // Reset timer
         startTime = 0;
         if(globalInterval) clearInterval(globalInterval);
         document.getElementById('global-timer-ui').innerText = '00:00';
         document.getElementById('global-timer-ui').classList.remove('active');
         
-        // UI
         const btn = document.getElementById('btn-finish');
         btn.innerText = "GUARDAR SESIÓN MANUAL";
         btn.classList.remove('update');
@@ -390,7 +779,7 @@
             <div style="display:flex; justify-content:space-between; align-items:center; padding:15px 0; border-bottom:1px solid #333; font-size:13px;">
                 <div>
                     <b style="font-size:14px; color:white">${l.type}</b>
-                    <br><span style="color:#666">${new Date(l.date).toLocaleDateString()} · ${l.duration} min · RPE ${l.rpe}</span>
+                    <br><span style="color:#666">${new Date(l.date).toLocaleDateString('es-ES')} · ${l.duration} min · RPE ${l.rpe}</span>
                 </div>
                 <div>
                     <button onclick='editLog("${l.id}", "${l.type}", ${l.weight}, ${l.rpe})' style="background:none; border:none; margin-right:15px; font-size:18px; cursor:pointer;">✏️</button>
@@ -406,23 +795,19 @@
         switchTab('train');
         editingId = id;
         
-        // Ocultar botón start, mostrar formulario
         document.getElementById('start-btn-container').style.display = 'none';
         document.getElementById('finish-section').classList.add('visible');
         document.getElementById('panel-active').classList.remove('visible');
         
-        // Rellenar datos
         document.getElementById('inp-weight').value = w;
         document.getElementById('inp-rpe').value = rpe;
         document.getElementById('inp-type').value = type;
         
-        // Reset timer
         startTime = 0;
         if(globalInterval) clearInterval(globalInterval);
         document.getElementById('global-timer-ui').innerText = '00:00';
         document.getElementById('global-timer-ui').classList.remove('active');
         
-        // UI Feedback
         const btn = document.getElementById('btn-finish');
         btn.innerText = "ACTUALIZAR REGISTRO";
         btn.classList.add('update');
@@ -433,43 +818,71 @@
 
     window.deleteLog = async(id) => { 
         if(confirm("¿Seguro que quieres borrar este registro?")) {
-            await deleteDoc(doc(db,"workouts",id));
+            try {
+                await deleteDoc(doc(db,"workouts",id));
+            } catch(error) {
+                console.error("Error al borrar:", error);
+                alert("Error al borrar el registro");
+            }
         }
     };
 
     let chartInstance;
     function updateChart(logs) {
-        const ctx = document.getElementById('chart').getContext('2d');
+        const ctx = document.getElementById('chart');
+        if(!ctx) return;
+        
         const data = [...logs].reverse();
         if(chartInstance) chartInstance.destroy();
-        chartInstance = new Chart(ctx, {
+        
+        chartInstance = new Chart(ctx.getContext('2d'), {
             type: 'line',
             data: {
-                labels: data.map(l => new Date(l.date).getDate() + '/' + (new Date(l.date).getMonth()+1)),
+                labels: data.map(l => {
+                    const d = new Date(l.date);
+                    return d.getDate() + '/' + (d.getMonth()+1);
+                }),
                 datasets: [{ 
-                    label: 'Nivel', data: data.map(l => l.level || 1), 
-                    borderColor: '#32d74b', backgroundColor: 'rgba(50, 215, 75, 0.1)',
-                    fill: true, tension: 0.3, stepped: true
+                    label: 'Nivel', 
+                    data: data.map(l => l.level || 1), 
+                    borderColor: '#32d74b', 
+                    backgroundColor: 'rgba(50, 215, 75, 0.1)',
+                    fill: true, 
+                    tension: 0.3, 
+                    stepped: true,
+                    pointBackgroundColor: '#32d74b',
+                    pointBorderColor: '#32d74b',
+                    pointRadius: 4
                 }]
             },
             options: { 
                 responsive: true,
                 maintainAspectRatio: true,
-                plugins:{legend:{display:false}}, 
-                scales:{
-                    x:{display:true, grid:{color:'#333'}}, 
-                    y:{display:true, grid:{color:'#333'}}
+                plugins: {
+                    legend: {display: false}
+                }, 
+                scales: {
+                    x: {
+                        display: true, 
+                        grid: {color: '#333'},
+                        ticks: {color: '#888'}
+                    }, 
+                    y: {
+                        display: true, 
+                        grid: {color: '#333'},
+                        ticks: {color: '#888'},
+                        beginAtZero: true
+                    }
                 } 
             }
         });
     }
 
     window.switchTab = (t) => {
-        document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));
+        document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
         document.getElementById('p-'+t).classList.remove('hidden');
-        document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         
-        // Encontrar el botón correcto y activarlo
         const tabs = document.querySelectorAll('.tab-btn');
         tabs.forEach(btn => {
             if((t === 'train' && btn.textContent.includes('ENTRENO')) ||
@@ -481,89 +894,6 @@
 
     window.addEventListener('load', initApp);
 </script>
-```
-
-</head>
-<body>
-
-```
-<div id="info-modal" class="modal-overlay">
-    <div class="modal-content">
-        <button class="close-modal" onclick="closeModal()">×</button>
-        <h2 id="m-title" style="margin-bottom:10px; color:white;">Nombre</h2>
-        <p id="m-desc" style="color:#ccc; font-size:15px; line-height:1.5;">Descripción...</p>
-        <a id="m-video" href="#" target="_blank" class="btn-video">📺 Ver en YouTube</a>
-    </div>
-</div>
-
-<div id="p-train" class="page">
-    <div class="top-bar">
-        <div>
-            <div style="font-size:10px; color:#888;">HOY TOCA</div>
-            <h2 id="today-title" style="margin:5px 0;">...</h2>
-        </div>
-        <div id="global-timer-ui" class="global-timer">00:00</div>
-    </div>
-
-    <div id="panel-active" class="active-panel">
-        <div style="text-align:center; font-size:11px; color:#888; letter-spacing:1px; text-transform:uppercase;">Tiempo de Descanso</div>
-        <div id="rest-display" class="rest-display">0:00</div>
-        <div class="rest-controls">
-            <button onclick="startRest(60)">60s</button>
-            <button onclick="startRest(90)">90s</button>
-            <button onclick="startRest(120)">2m</button>
-        </div>
-    </div>
-
-    <div id="session-content"></div>
-
-    <div class="tomorrow-box">
-        <div class="tomorrow-title">👀 Previsión para Mañana: <span id="tmr-type" style="color:white; font-weight:bold;"></span></div>
-        <div id="tmr-icons" class="mini-grid"></div>
-    </div>
-
-    <div id="start-btn-container" class="sticky-action">
-        <button class="btn-start" onclick="startWorkout()">▶ COMENZAR SESIÓN</button>
-    </div>
-
-    <div id="finish-section" class="finish-card">
-        <h3 style="margin-bottom:15px;">Datos de la Sesión</h3>
-        
-        <label style="font-size:12px; color:#888;">Tipo de Entrenamiento</label>
-        <select id="inp-type">
-            <option value="Torso">Torso</option>
-            <option value="Pierna">Pierna</option>
-            <option value="Full Body">Full Body</option>
-            <option value="Aeróbico">Aeróbico</option>
-            <option value="Trekking">Trekking</option>
-        </select>
-
-        <label style="font-size:12px; color:#888; display:block; margin-top:10px;">Peso Corporal (Kg)</label>
-        <input type="number" id="inp-weight" step="0.1" placeholder="Ej: 75.5">
-
-        <label style="font-size:12px; color:#888; display:block; margin-top:10px;">Sensación (RPE)</label>
-        <select id="inp-rpe">
-            <option value="">¿Cómo fue?</option>
-            <option value="6">6 - Fácil (Subir nivel)</option>
-            <option value="7">7 - Normal</option>
-            <option value="8">8 - Duro</option>
-            <option value="9">9 - Muy Duro (Bajar nivel)</option>
-        </select>
-        
-        <button id="btn-finish" class="btn-save" onclick="saveSession()">GUARDAR SESIÓN</button>
-    </div>
-</div>
-
-<div id="p-anl" class="page hidden">
-    <h1 style="margin-bottom:20px;">Mi Progreso</h1>
-    <div class="card"><canvas id="chart" height="150"></canvas></div>
-    <div class="card" id="hist-list" style="padding-bottom:50px;"></div>
-</div>
-
-<nav class="tab-bar">
-    <button class="tab-btn active" onclick="switchTab('train')">ENTRENO</button>
-    <button class="tab-btn" onclick="switchTab('anl')">DATOS</button>
-</nav>
 ```
 
 </body>

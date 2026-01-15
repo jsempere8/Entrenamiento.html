@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BioHacker v14: Edu Edition</title>
+    <title>BioHacker v15: Cardio Timer</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -21,43 +21,43 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- BASE DE DATOS: EDICIÓN EDU GARCIA ---
+        // --- DATOS EDU GARCIA ---
         const EXERCISES = {
             pushups: { 
                 name: "Flexiones (Push-ups)", rest: 60, 
                 img: "https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?q=80&w=400&auto=format&fit=crop",
-                desc: "Crea un 'triángulo' entre tu cabeza y manos. No abras los codos (forma de flecha, no de T). Baja controlado, sube explosivo.",
-                video: "https://www.youtube.com/watch?v=E6a_g8FTPoQ" // Video específico Edu Garcia
+                desc: "Crea un 'triángulo' entre tu cabeza y manos. No abras los codos. Baja controlado, sube explosivo.",
+                video: "https://www.youtube.com/watch?v=E6a_g8FTPoQ"
             },
             squats: { 
                 name: "Sentadillas", rest: 90, 
                 img: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?q=80&w=400&auto=format&fit=crop",
-                desc: "Pies bien apoyados (trípode plantar). Rodillas siguen la línea del pie. Baja profundo pero manteniendo la espalda neutra.",
-                video: "https://www.youtube.com/watch?v=J9x0ffVL5rg" // Video 6 Variantes Squats Edu Garcia
+                desc: "Trípode plantar. Rodillas siguen la línea del pie. Baja profundo manteniendo espalda neutra.",
+                video: "https://www.youtube.com/watch?v=J9x0ffVL5rg"
             },
             lunges: { 
                 name: "Zancadas / Stride", rest: 60, 
                 img: "https://images.unsplash.com/photo-1434608519344-49d77a699ded?q=80&w=400&auto=format&fit=crop",
-                desc: "Paso controlado. Edu recomienda fluidez: no golpees el suelo, aterriza suave. Tronco erguido.",
-                video: "https://www.youtube.com/results?search_query=edugarcia_trainer+zancadas+fuerza" // Búsqueda específica en su canal
+                desc: "Paso controlado. Aterriza suave, sin golpear el suelo. Tronco erguido.",
+                video: "https://www.youtube.com/results?search_query=edugarcia_trainer+zancadas+fuerza"
             },
             plank: { 
                 name: "Plancha Segura", rest: 45, 
                 img: "https://plus.unsplash.com/premium_photo-1672046218038-f86a978f85f3?q=80&w=400&auto=format&fit=crop",
-                desc: "Si duele la espalda, sube la cadera un poco. Empuja el suelo con los antebrazos. Glúteo de acero.",
-                video: "https://www.youtube.com/watch?v=_OlSElUXU2w" // Video Plancha sin dolor Edu Garcia
+                desc: "Empuja el suelo con los antebrazos. Glúteo de acero. Si duele lumbar, sube un poco la cadera.",
+                video: "https://www.youtube.com/watch?v=_OlSElUXU2w"
             },
             burpees: { 
                 name: "Burpees (Fluidity)", rest: 90, 
                 img: "https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?q=80&w=400&auto=format&fit=crop", 
-                desc: "Más que un burpee militar, busca una transición fluida: Sentadilla -> Plancha -> Suelo -> Arriba. Eficiencia de movimiento.",
-                video: "https://www.youtube.com/results?search_query=edugarcia_trainer+levantarse+suelo" // Enfoque movimiento natural
+                desc: "Transición fluida: Sentadilla -> Plancha -> Suelo -> Arriba. Eficiencia de movimiento.",
+                video: "https://www.youtube.com/results?search_query=edugarcia_trainer+levantarse+suelo"
             },
             row: { 
                 name: "Remo / Dominada", rest: 90, 
                 img: "https://images.unsplash.com/photo-1598289431512-b97b0917affc?q=80&w=400&auto=format&fit=crop",
-                desc: "Retracción escapular: junta los omóplatos antes de tirar. Codos pegados al cuerpo si buscas fuerza.",
-                video: "https://www.youtube.com/shorts/sMhAi0eTlMA" // Short específico Remo Anillas
+                desc: "Retracción escapular: junta omóplatos antes de tirar. Codos pegados al cuerpo.",
+                video: "https://www.youtube.com/shorts/sMhAi0eTlMA"
             }
         };
 
@@ -76,13 +76,13 @@
             :root { --primary: #0a84ff; --bg: #000; --card: #1c1c1e; --text: #fff; --accent: #32d74b; --warning: #ffd60a; }
             body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; padding-bottom: 120px; }
             
-            /* Header & Timer */
+            /* Top Bar */
             .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; position: sticky; top: 0; background: var(--bg); z-index: 50; padding: 10px 0; border-bottom: 1px solid #111; }
             .global-timer { font-family: monospace; font-size: 24px; font-weight: 700; color: #666; background: #111; padding: 8px 16px; border-radius: 8px; border: 1px solid #222; min-width: 80px; text-align: center; }
             .global-timer.active { color: var(--primary); border-color: var(--primary); animation: pulse 2s infinite; }
             @keyframes pulse { 0% {box-shadow: 0 0 0 rgba(10,132,255,0);} 50% {box-shadow: 0 0 15px rgba(10,132,255,0.2);} 100% {box-shadow: 0 0 0 rgba(10,132,255,0);} }
 
-            /* Ejercicios */
+            /* Cards */
             .ex-card { display: flex; align-items: center; background: #1c1c1e; margin-bottom: 12px; border-radius: 12px; overflow: hidden; padding-right: 15px; border: 1px solid #333; position: relative; }
             .ex-img { width: 85px; height: 85px; object-fit: cover; margin-right: 15px; cursor: pointer; }
             .ex-hint { position: absolute; bottom: 5px; left: 5px; font-size: 9px; background: rgba(0,0,0,0.7); padding: 2px 5px; border-radius: 4px; pointer-events: none; color: white; }
@@ -91,25 +91,25 @@
             .ex-meta { font-size: 13px; color: #888; display: flex; gap: 10px; }
             .tag-rest { color: var(--warning); font-weight: 600; }
             
-            /* Botón Start (Flotante) */
+            /* Start Button */
             .sticky-action { position: fixed; bottom: 80px; left: 15px; right: 15px; z-index: 90; }
             .btn-start { width: 100%; background: var(--accent); color: #000; font-weight: 900; padding: 18px; border-radius: 16px; border: none; font-size: 18px; box-shadow: 0 5px 20px rgba(50, 215, 75, 0.4); cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
             
-            /* Panel Descanso */
+            /* Rest Panel */
             .active-panel { background: #111; border: 1px solid var(--primary); padding: 20px; border-radius: 16px; margin-bottom: 25px; display: none; }
             .active-panel.visible { display: block; }
             .rest-display { font-size: 40px; font-family: monospace; text-align: center; color: #fff; margin: 15px 0; font-weight: bold; }
             .rest-controls { display: flex; gap: 8px; justify-content: center; }
             .rest-controls button { background: #2c2c2e; color: white; border: 1px solid #444; padding: 12px; border-radius: 10px; flex: 1; font-weight: bold; }
 
-            /* Finalizar & Editar */
+            /* Finish Form */
             .finish-card { display: none; margin-top: 30px; background: #1c1c1e; padding: 20px; border-radius: 20px; border: 1px solid #333; }
             .finish-card.visible { display: block; }
             input, select { width: 100%; padding: 14px; background: #000; border: 1px solid #444; color: #fff; border-radius: 10px; margin-top: 10px; box-sizing: border-box; font-size: 16px; }
             .btn-save { width: 100%; background: var(--primary); color: white; padding: 16px; border: none; border-radius: 12px; font-weight: bold; margin-top: 15px; font-size: 16px; }
             .btn-save.update { background: #ff9f0a; color: black; }
 
-            /* Preview Tomorrow */
+            /* Tomorrow Preview */
             .tomorrow-box { margin-top: 40px; padding: 20px; border-top: 1px solid #333; opacity: 0.8; }
             .tomorrow-title { font-size: 12px; text-transform: uppercase; color: #888; margin-bottom: 10px; letter-spacing: 1px; }
             .mini-grid { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; }
@@ -129,7 +129,7 @@
         `;
         const styleSheet = document.createElement("style"); styleSheet.innerText = styles; document.head.appendChild(styleSheet);
 
-        // --- VARIABLES ---
+        // --- LÓGICA ---
         let userLevel = 1; let weight = 72;
         let todayRoutine = {};
         let currentReps = 10;
@@ -164,17 +164,19 @@
             document.getElementById('today-title').innerText = todayRoutine.type;
             const typeSelect = document.getElementById('inp-type');
             if(typeSelect) typeSelect.value = todayRoutine.type;
-
             const container = document.getElementById('session-content');
             
+            // Renderizado diferente según tipo, pero BOTÓN SIEMPRE VISIBLE
+            document.getElementById('start-btn-container').style.display = 'block';
+
             if (todayRoutine.type === "Trekking" || todayRoutine.type === "Aeróbico") {
-                document.getElementById('start-btn-container').style.display = 'none';
                 container.innerHTML = `<div class="ex-card" style="padding:30px; display:block; text-align:center; border-color:var(--warning); color:var(--warning);">
                     <div style="font-size:40px; margin-bottom:10px;">${todayRoutine.type==="Trekking"?"🏔️":"🏃"}</div>
                     <h3>${todayRoutine.type}</h3>
-                    <p style="color:#888; margin-top:10px;">Hoy no hay registro de series. <br>Disfruta del movimiento.</p>
+                    <p style="color:#888; margin-top:10px;">Dale al botón iniciar para cronometrar tu salida.</p>
                 </div>`;
             } else {
+                // Rutina de fuerza
                 let html = "";
                 todayRoutine.keys.forEach(key => {
                     const ex = EXERCISES[key];
@@ -192,7 +194,6 @@
                         </div>`;
                 });
                 container.innerHTML = html;
-                document.getElementById('start-btn-container').style.display = 'block';
             }
         }
 
@@ -200,8 +201,8 @@
             const tmrIdx = (todayIdx + 1) % 7;
             const tmrRoutine = SCHEDULE[tmrIdx];
             document.getElementById('tmr-type').innerText = tmrRoutine.type;
-            
             const container = document.getElementById('tmr-icons');
+            
             if(tmrRoutine.keys.length === 0) {
                 container.innerHTML = `<span style="font-size:12px; color:#666;">Descanso activo / Cardio</span>`;
             } else {
@@ -224,11 +225,16 @@
         };
         window.closeModal = () => document.getElementById('info-modal').style.display = 'none';
 
+        // --- TIMER LOGIC MEJORADA ---
         window.startWorkout = () => {
             document.getElementById('start-btn-container').classList.add('hidden');
-            document.getElementById('panel-active').classList.add('visible');
             document.getElementById('finish-section').classList.add('visible');
             document.getElementById('global-timer-ui').classList.add('active');
+
+            // Solo mostrar panel de descanso si NO es cardio/trekking
+            if(todayRoutine.type !== "Aeróbico" && todayRoutine.type !== "Trekking") {
+                document.getElementById('panel-active').classList.add('visible');
+            }
 
             startTime = Date.now();
             if(globalInterval) clearInterval(globalInterval);
@@ -241,8 +247,9 @@
                     `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
             }, 1000);
             
+            // Scroll suave hacia abajo
             setTimeout(() => {
-                document.getElementById('panel-active').scrollIntoView({behavior: "smooth", block: "center"});
+                document.getElementById('finish-section').scrollIntoView({behavior: "smooth", block: "start"});
             }, 300);
         };
 
@@ -283,6 +290,7 @@
             else duration = 45;
 
             let newLvl = userLevel;
+            // Solo ajustamos nivel si es entrenamiento de fuerza
             if(["Torso", "Pierna", "Full Body"].includes(type)) {
                 if(parseInt(rpe) <= 6) newLvl++;
                 else if(parseInt(rpe) >= 9 && userLevel > 1) newLvl--;
@@ -377,7 +385,7 @@
             <button class="close-modal" onclick="closeModal()">×</button>
             <h2 id="m-title" style="margin-bottom:10px; color:white;">Nombre</h2>
             <p id="m-desc" style="color:#ccc; font-size:15px; line-height:1.5;">Descripción...</p>
-            <a id="m-video" href="#" target="_blank" class="btn-video">📺 Ver Tutorial de Edu García</a>
+            <a id="m-video" href="#" target="_blank" class="btn-video">📺 Ver Tutorial</a>
         </div>
     </div>
 
@@ -426,10 +434,10 @@
             <label style="font-size:12px; color:#888; display:block; margin-top:10px;">Sensación (RPE)</label>
             <select id="inp-rpe">
                 <option value="">¿Cómo fue?</option>
-                <option value="6">6 - Fácil (Subir nivel)</option>
+                <option value="6">6 - Fácil</option>
                 <option value="7">7 - Normal</option>
                 <option value="8">8 - Duro</option>
-                <option value="9">9 - Muy Duro (Bajar nivel)</option>
+                <option value="9">9 - Muy Duro</option>
             </select>
             <button id="btn-finish" class="btn-save" onclick="saveSession()">GUARDAR SESIÓN</button>
         </div>

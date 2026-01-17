@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BioHacker v18: Dashboard PRO</title>
+    <title>BioHacker v19: Elevation Ready</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -21,7 +21,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- DATOS EDU GARCIA & CONFIG ---
+        // --- DATOS Y CONFIGURACIÓN ---
         const EXERCISES = {
             pushups: { name: "Flexiones", rest: 60, img: "https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?q=80&w=400&auto=format&fit=crop", desc: "Triángulo cabeza-manos. Codos flecha.", video: "https://www.youtube.com/watch?v=E6a_g8FTPoQ" },
             squats: { name: "Sentadillas", rest: 90, img: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?q=80&w=400&auto=format&fit=crop", desc: "Trípode plantar. Rodillas siguen pies.", video: "https://www.youtube.com/watch?v=J9x0ffVL5rg" },
@@ -49,7 +49,6 @@
             .global-timer.active { color: var(--primary); border-color: var(--primary); animation: pulse 2s infinite; }
             @keyframes pulse { 0% {box-shadow: 0 0 0 rgba(10,132,255,0);} 50% {box-shadow: 0 0 15px rgba(10,132,255,0.2);} 100% {box-shadow: 0 0 0 rgba(10,132,255,0);} }
 
-            /* CARDS & UI */
             .ex-card { display: flex; align-items: center; background: #1c1c1e; margin-bottom: 12px; border-radius: 12px; overflow: hidden; padding-right: 15px; border: 1px solid #333; position: relative; }
             .ex-img { width: 85px; height: 85px; object-fit: cover; margin-right: 15px; cursor: pointer; }
             .ex-hint { position: absolute; bottom: 5px; left: 5px; font-size: 9px; background: rgba(0,0,0,0.7); padding: 2px 5px; border-radius: 4px; pointer-events: none; color: white; }
@@ -61,7 +60,7 @@
             .sticky-action { position: fixed; bottom: 80px; left: 15px; right: 15px; z-index: 90; }
             .btn-start { width: 100%; background: var(--accent); color: #000; font-weight: 900; padding: 18px; border-radius: 16px; border: none; font-size: 18px; box-shadow: 0 5px 20px rgba(50, 215, 75, 0.4); cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
             
-            /* DASHBOARD STYLES */
+            /* DASHBOARD */
             .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 25px; }
             .stat-box { background: #1c1c1e; padding: 15px 10px; border-radius: 12px; text-align: center; border: 1px solid #333; }
             .stat-num { font-size: 22px; font-weight: 900; color: var(--primary); display: block; }
@@ -69,12 +68,12 @@
             .chart-container { background: #1c1c1e; border-radius: 16px; padding: 15px; border: 1px solid #333; margin-bottom: 20px; }
             .chart-title { font-size: 14px; font-weight: bold; color: white; margin-bottom: 15px; display: flex; justify-content: space-between; }
             
-            /* FORM & REST */
             .active-panel { background: #111; border: 1px solid var(--primary); padding: 20px; border-radius: 16px; margin-bottom: 25px; display: none; }
             .active-panel.visible { display: block; }
             .rest-display { font-size: 40px; font-family: monospace; text-align: center; color: #fff; margin: 15px 0; font-weight: bold; }
             .rest-controls { display: flex; gap: 8px; justify-content: center; }
             .rest-controls button { background: #2c2c2e; color: white; border: 1px solid #444; padding: 12px; border-radius: 10px; flex: 1; font-weight: bold; }
+
             .finish-card { display: none; margin-top: 30px; background: #1c1c1e; padding: 20px; border-radius: 20px; border: 1px solid #333; }
             .finish-card.visible { display: block; }
             .form-row { display: flex; gap: 10px; margin-top: 10px; }
@@ -84,17 +83,19 @@
             .btn-save { width: 100%; background: var(--primary); color: white; padding: 16px; border: none; border-radius: 12px; font-weight: bold; margin-top: 25px; font-size: 16px; cursor: pointer; }
             .btn-save.update { background: #ff9f0a; color: black; }
             
-            /* MISC */
             .hr-zone { background: rgba(10, 132, 255, 0.1); border: 1px solid var(--primary); padding: 15px; border-radius: 12px; margin-bottom: 20px; text-align: center; display: none; }
             .hr-val { font-size: 24px; font-weight: 900; color: var(--primary); display: block; margin-top: 5px; }
+            
             .tomorrow-box { margin-top: 40px; padding: 20px; border-top: 1px solid #333; opacity: 0.8; }
             .mini-grid { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; margin-top: 10px; }
             .mini-ex { flex: 0 0 60px; text-align: center; font-size: 10px; }
             .mini-img { width: 50px; height: 50px; border-radius: 10px; object-fit: cover; margin-bottom: 5px; border: 1px solid #444; }
+
             .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 200; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
             .modal-content { background: #1c1c1e; width: 85%; max-width: 400px; padding: 30px; border-radius: 20px; border: 1px solid #444; text-align: center; position: relative; }
             .close-modal { position: absolute; top: 15px; right: 20px; font-size: 28px; color: #888; background: none; border: none; cursor: pointer; }
             .btn-video { display: block; width: 100%; background: #ff0000; color: white; text-decoration: none; padding: 14px; border-radius: 12px; margin-top: 20px; font-weight: bold; }
+
             .hidden { display: none !important; }
             .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(20,20,20,0.95); display: flex; padding: 15px; border-top: 1px solid #333; z-index: 100; }
             .tab-btn { flex: 1; background: none; border: none; color: #666; font-weight: 700; font-size: 11px; }
@@ -102,7 +103,7 @@
         `;
         const styleSheet = document.createElement("style"); styleSheet.innerText = styles; document.head.appendChild(styleSheet);
 
-        // --- ESTADO ---
+        // --- LÓGICA ---
         let userLevel = 1; let userWeight = 72; let userAge = 30;
         let currentReps = 10;
         let todayType = "Torso"; let tomorrowType = "Aeróbico";
@@ -117,13 +118,11 @@
                     if(document.getElementById('inp-age')) document.getElementById('inp-age').value = userAge || "";
                 }
             });
-
-            // Pedimos más logs (20) para que la gráfica tenga datos suficientes
             onSnapshot(query(collection(db, "workouts"), orderBy("date", "desc"), limit(20)), (snap) => {
                 const logs = snap.docs.map(d => ({id:d.id, ...d.data()}));
                 calculateSchedule(logs);
                 renderSession();
-                renderAnalytics(logs); // Nueva función de análisis
+                renderAnalytics(logs);
             });
         };
 
@@ -225,6 +224,7 @@
             }, 1000);
         };
 
+        // --- TOGGLE CAMPOS EXTRA ---
         window.toggleDistField = (val) => {
              const distContainer = document.getElementById('row-dist');
              if(val === "Aeróbico" || val === "Trekking") {
@@ -245,6 +245,7 @@
             const kcal = document.getElementById('inp-kcal').value || 0;
             const bpm = document.getElementById('inp-bpm').value || 0;
             const dist = document.getElementById('inp-dist').value || 0;
+            const elevation = document.getElementById('inp-elevation').value || 0; // NUEVO
 
             if(!rpe || !w || !type || !durationInput) return alert("Completa Duración, RPE y Peso.");
 
@@ -259,16 +260,14 @@
             const data = {
                 date: editingId ? new Date().toISOString() : new Date().toISOString(),
                 type: type, rpe: parseInt(rpe), weight: parseFloat(w), duration: finalDuration, level: newLvl,
-                kcal: parseInt(kcal), bpm: parseInt(bpm), dist: parseFloat(dist)
+                kcal: parseInt(kcal), bpm: parseInt(bpm), dist: parseFloat(dist),
+                elevation: parseInt(elevation) // NUEVO
             };
             
             await setDoc(doc(db, "userStats", "global"), { level: newLvl, weight: parseFloat(w), age: parseInt(age) || 0 }, { merge: true });
 
             if(editingId) {
-                await updateDoc(doc(db, "workouts", editingId), { 
-                    type: type, rpe: parseInt(rpe), weight: parseFloat(w), duration: finalDuration, level: newLvl,
-                    kcal: parseInt(kcal), bpm: parseInt(bpm), dist: parseFloat(dist)
-                });
+                await updateDoc(doc(db, "workouts", editingId), data);
                 alert("Actualizado"); editingId = null;
             } else {
                 await addDoc(collection(db, "workouts"), data);
@@ -277,7 +276,7 @@
             location.reload();
         };
 
-        window.editLog = (id, type, w, rpe, dur, kcal, bpm, dist) => {
+        window.editLog = (id, type, w, rpe, dur, kcal, bpm, dist, elev) => {
             switchTab('train');
             editingId = id;
             document.getElementById('start-btn-container').classList.add('hidden');
@@ -291,6 +290,8 @@
             document.getElementById('inp-kcal').value = kcal || "";
             document.getElementById('inp-bpm').value = bpm || "";
             document.getElementById('inp-dist').value = dist || "";
+            document.getElementById('inp-elevation').value = elev || ""; // NUEVO
+            
             toggleDistField(type);
 
             const btn = document.getElementById('btn-finish');
@@ -302,12 +303,11 @@
 
         window.deleteLog = async(id) => { if(confirm("¿Borrar?")) await deleteDoc(doc(db,"workouts",id)); };
 
-        // --- DASHBOARD & ANALYTICS (NUEVO) ---
+        // --- DASHBOARD ---
         let chartFuerza = null;
         let chartCardio = null;
 
         function renderAnalytics(logs) {
-            // 1. STATS RÁPIDOS
             const totalKcal = logs.reduce((acc, curr) => acc + (curr.kcal || 0), 0);
             const avgRpe = logs.length ? (logs.reduce((acc,curr) => acc + (curr.rpe || 0), 0) / logs.length).toFixed(1) : 0;
             
@@ -315,16 +315,10 @@
             document.getElementById('stat-kcal').innerText = totalKcal > 1000 ? (totalKcal/1000).toFixed(1) + 'k' : totalKcal;
             document.getElementById('stat-rpe').innerText = avgRpe;
 
-            // 2. PREPARAR DATOS GRÁFICAS (Orden cronológico)
             const sortedLogs = [...logs].reverse();
-            
-            // Datos Fuerza
             const strLogs = sortedLogs.filter(l => ["Torso", "Pierna", "Full Body"].includes(l.type));
-            
-            // Datos Cardio
             const cardLogs = sortedLogs.filter(l => ["Aeróbico", "Trekking"].includes(l.type));
 
-            // 3. RENDER GRÁFICA FUERZA
             const ctxF = document.getElementById('chartFuerza').getContext('2d');
             if(chartFuerza) chartFuerza.destroy();
             chartFuerza = new Chart(ctxF, {
@@ -332,66 +326,37 @@
                 data: {
                     labels: strLogs.map(l => new Date(l.date).getDate() + '/' + (new Date(l.date).getMonth()+1)),
                     datasets: [{
-                        label: 'Peso Levantado (Kg)',
-                        data: strLogs.map(l => l.weight),
-                        borderColor: '#32d74b',
-                        backgroundColor: 'rgba(50, 215, 75, 0.1)',
-                        tension: 0.3,
-                        fill: true
+                        label: 'Peso Levantado (Kg)', data: strLogs.map(l => l.weight),
+                        borderColor: '#32d74b', backgroundColor: 'rgba(50, 215, 75, 0.1)', tension: 0.3, fill: true
                     }]
                 },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { grid: { color: '#333' } }, x: { grid: { display: false } } }
-                }
+                options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#333' } }, x: { grid: { display: false } } } }
             });
 
-            // 4. RENDER GRÁFICA CARDIO (DOBLE EJE)
             const ctxC = document.getElementById('chartCardio').getContext('2d');
             if(chartCardio) chartCardio.destroy();
-            
             if(cardLogs.length > 0) {
                 chartCardio = new Chart(ctxC, {
                     type: 'bar',
                     data: {
                         labels: cardLogs.map(l => new Date(l.date).getDate() + '/' + (new Date(l.date).getMonth()+1)),
                         datasets: [
-                            {
-                                label: 'Distancia (km)',
-                                data: cardLogs.map(l => l.dist || 0),
-                                backgroundColor: '#0a84ff',
-                                yAxisID: 'y',
-                                order: 2
-                            },
-                            {
-                                type: 'line',
-                                label: 'Pulso (BPM)',
-                                data: cardLogs.map(l => l.bpm || 0),
-                                borderColor: '#ff453a',
-                                borderDash: [5, 5],
-                                tension: 0.4,
-                                yAxisID: 'y1',
-                                order: 1
-                            }
+                            { label: 'Distancia (km)', data: cardLogs.map(l => l.dist || 0), backgroundColor: '#0a84ff', yAxisID: 'y', order: 2 },
+                            { type: 'line', label: 'Pulso (BPM)', data: cardLogs.map(l => l.bpm || 0), borderColor: '#ff453a', borderDash: [5, 5], tension: 0.4, yAxisID: 'y1', order: 1 }
                         ]
                     },
                     options: {
                         responsive: true,
                         plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, color: '#888' } } },
-                        scales: {
-                            y: { type: 'linear', display: true, position: 'left', grid: { color: '#333' } },
-                            y1: { type: 'linear', display: true, position: 'right', grid: { display: false } },
-                            x: { grid: { display: false } }
-                        }
+                        scales: { y: { display: true, position: 'left', grid: { color: '#333' } }, y1: { display: true, position: 'right', grid: { display: false } }, x: { grid: { display: false } } }
                     }
                 });
             }
 
-            // 5. LISTA HISTORIAL
             document.getElementById('hist-list').innerHTML = logs.map(l => {
                 let metrics = [];
                 if(l.dist > 0) metrics.push(`📏 ${l.dist}km`);
+                if(l.elevation > 0) metrics.push(`⛰️ ${l.elevation}m`); // MOSTRAR DESNIVEL
                 if(l.bpm > 0) metrics.push(`❤️ ${l.bpm}`);
                 if(l.kcal > 0) metrics.push(`🔥 ${l.kcal}`);
                 const metricStr = metrics.length ? " · " + metrics.join(" · ") : "";
@@ -403,7 +368,7 @@
                         <br><span style="color:#666">${new Date(l.date).toLocaleDateString()} · ${l.duration} min${metricStr}</span>
                     </div>
                     <div>
-                        <button onclick='editLog("${l.id}", "${l.type}", ${l.weight}, ${l.rpe}, ${l.duration}, ${l.kcal||0}, ${l.bpm||0}, ${l.dist||0})' style="background:none; border:none; margin-right:15px; font-size:18px; cursor:pointer;">✏️</button>
+                        <button onclick='editLog("${l.id}", "${l.type}", ${l.weight}, ${l.rpe}, ${l.duration}, ${l.kcal||0}, ${l.bpm||0}, ${l.dist||0}, ${l.elevation||0})' style="background:none; border:none; margin-right:15px; font-size:18px; cursor:pointer;">✏️</button>
                         <button onclick="deleteLog('${l.id}')" style="color:#ff453a; background:none; border:none; font-size:18px; cursor:pointer;">✕</button>
                     </div>
                 </div>`;
@@ -491,6 +456,10 @@
                 <div style="flex:1">
                     <label>📏 Distancia (Km)</label>
                     <input type="number" id="inp-dist" step="0.01" placeholder="Km">
+                </div>
+                <div style="flex:1">
+                    <label>⛰️ Desnivel (+m)</label>
+                    <input type="number" id="inp-elevation" placeholder="Metros">
                 </div>
             </div>
 

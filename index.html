@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BioHacker v20: Weekend Logic</title>
+    <title>BioHacker v21: Edu Natural Flow</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -21,27 +21,63 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- CONFIGURACIÓN ---
+        // --- BIBLIOTECA EDU GARCÍA (MOVIMIENTO NATURAL) ---
         const EXERCISES = {
-            pushups: { name: "Flexiones", rest: 60, img: "https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?q=80&w=400&auto=format&fit=crop", desc: "Triángulo cabeza-manos. Codos flecha.", video: "https://www.youtube.com/watch?v=E6a_g8FTPoQ" },
-            squats: { name: "Sentadillas", rest: 90, img: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?q=80&w=400&auto=format&fit=crop", desc: "Trípode plantar. Rodillas siguen pies.", video: "https://www.youtube.com/watch?v=J9x0ffVL5rg" },
-            lunges: { name: "Zancadas", rest: 60, img: "https://images.unsplash.com/photo-1434608519344-49d77a699ded?q=80&w=400&auto=format&fit=crop", desc: "Paso fluido. Aterriza suave.", video: "https://www.youtube.com/results?search_query=edugarcia_trainer+zancadas+fuerza" },
-            plank: { name: "Plancha", rest: 45, img: "https://plus.unsplash.com/premium_photo-1672046218038-f86a978f85f3?q=80&w=400&auto=format&fit=crop", desc: "Empuja suelo. Glúteo fuerte.", video: "https://www.youtube.com/watch?v=_OlSElUXU2w" },
-            burpees: { name: "Burpees", rest: 90, img: "https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?q=80&w=400&auto=format&fit=crop", desc: "Fluidez, no impacto.", video: "https://www.youtube.com/results?search_query=edugarcia_trainer+levantarse+suelo" },
-            row: { name: "Remo/Dominada", rest: 90, img: "https://images.unsplash.com/photo-1598289431512-b97b0917affc?q=80&w=400&auto=format&fit=crop", desc: "Retracción escapular.", video: "https://www.youtube.com/shorts/sMhAi0eTlMA" }
+            pushups: { 
+                name: "Flexiones Orgánicas", 
+                rest: 60, 
+                img: "https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?q=80&w=400&auto=format&fit=crop", 
+                desc: "Manos bajo hombros. Codos pegados (flecha). Todo el cuerpo baja en bloque. Activa el abdomen.", 
+                video: "https://www.youtube.com/results?search_query=edugarcia_trainer+flexiones+correctas" 
+            },
+            squats: { 
+                name: "Sentadilla Profunda", 
+                rest: 90, 
+                img: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?q=80&w=400&auto=format&fit=crop", 
+                desc: "Talones pegados. Baja todo lo que tu movilidad permita. Espalda relajada pero recta. Respira.", 
+                video: "https://www.youtube.com/results?search_query=edugarcia_trainer+sentadilla+profunda" 
+            },
+            lunges: { 
+                name: "Zancada Consciente", 
+                rest: 60, 
+                img: "https://images.unsplash.com/photo-1434608519344-49d77a699ded?q=80&w=400&auto=format&fit=crop", 
+                desc: "Aterriza suave (sin ruido). Controla la bajada. La rodilla de atrás casi besa el suelo.", 
+                video: "https://www.youtube.com/results?search_query=edugarcia_trainer+zancadas" 
+            },
+            plank: { 
+                name: "Plancha Activa", 
+                rest: 45, 
+                img: "https://plus.unsplash.com/premium_photo-1672046218038-f86a978f85f3?q=80&w=400&auto=format&fit=crop", 
+                desc: "Empuja el suelo con antebrazos. Retroversión pélvica (aprieta glúteo). No te hundas.", 
+                video: "https://www.youtube.com/results?search_query=edugarcia_trainer+plancha+abdominal" 
+            },
+            burpees: { 
+                name: "Levantada (Suelo-Arriba)", 
+                rest: 90, 
+                img: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=400&auto=format&fit=crop", 
+                desc: "Baja al suelo y levántate de forma fluida. Alterna la pierna de apoyo. Sin impacto brusco.", 
+                video: "https://www.youtube.com/results?search_query=edugarcia_trainer+levantarse+del+suelo" 
+            },
+            row: { 
+                name: "Tracción / Remo", 
+                rest: 90, 
+                img: "https://images.unsplash.com/photo-1598289431512-b97b0917affc?q=80&w=400&auto=format&fit=crop", 
+                desc: "Usa una mesa, anillas o marco puerta. Retrae escápulas antes de tirar. Hombros lejos de orejas.", 
+                video: "https://www.youtube.com/results?search_query=edugarcia_trainer+traccion+espalda" 
+            }
         };
 
         const WORKOUT_ORDER = ["Torso", "Aeróbico", "Pierna", "Aeróbico", "Full Body"];
         const ROUTINES = {
             "Torso": ["pushups", "row", "plank"],
             "Pierna": ["squats", "lunges", "plank"],
-            "Full Body": ["burpees", "squats", "pushups"],
+            "Full Body": ["burpees", "squats", "pushups"], // Burpee ahora es "Levantada"
             "Aeróbico": [], "Trekking": []
         };
 
         // --- ESTILOS ---
         const styles = `
-            :root { --primary: #0a84ff; --bg: #000; --card: #1c1c1e; --text: #fff; --accent: #32d74b; --warning: #ffd60a; }
+            :root { --primary: #0a84ff; --bg: #000; --card: #1c1c1e; --text: #fff; --accent: #32d74b; --warning: #ffd60a; --danger: #ff453a; }
             body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; padding-bottom: 120px; }
             
             .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; position: sticky; top: 0; background: var(--bg); z-index: 50; padding: 10px 0; border-bottom: 1px solid #111; }
@@ -137,13 +173,12 @@
             if (isWeekend) {
                 // LOGICA FIN DE SEMANA -> TREKKING
                 todayType = "Trekking";
-                tomorrowType = dayOfWeek === 6 ? "Trekking" : "Torso"; // Si es sabado, mañana trekking. Si es domingo, mañana torso.
+                tomorrowType = dayOfWeek === 6 ? "Trekking" : "Torso";
             } else {
-                // LOGICA ENTRE SEMANA (Normal)
+                // LOGICA ENTRE SEMANA
                 if (logs.length === 0) {
                     todayType = WORKOUT_ORDER[0];
                 } else {
-                    // Buscar la última sesión que NO fuera Trekking para seguir el orden de fuerza
                     const lastStrengthLog = logs.find(l => ["Torso", "Pierna", "Full Body", "Aeróbico"].includes(l.type));
                     const lastType = lastStrengthLog ? lastStrengthLog.type : "Full Body";
                     
@@ -267,7 +302,7 @@
             const kcal = document.getElementById('inp-kcal').value || 0;
             const bpm = document.getElementById('inp-bpm').value || 0;
             const dist = document.getElementById('inp-dist').value || 0;
-            const elevation = document.getElementById('inp-elevation').value || 0; // NUEVO
+            const elevation = document.getElementById('inp-elevation').value || 0;
 
             if(!rpe || !w || !type || !durationInput) return alert("Completa Duración, RPE y Peso.");
 
@@ -313,7 +348,7 @@
             document.getElementById('inp-kcal').value = kcal || "";
             document.getElementById('inp-bpm').value = bpm || "";
             document.getElementById('inp-dist').value = dist || "";
-            document.getElementById('inp-elevation').value = elevation || ""; // NUEVO
+            document.getElementById('inp-elevation').value = elevation || ""; 
             
             if(dateStr) { document.getElementById('inp-date').value = getLocalISO(new Date(dateStr)); }
 
@@ -409,7 +444,7 @@
             <button class="close-modal" onclick="closeModal()">×</button>
             <h2 id="m-title" style="margin-bottom:10px; color:white;">Nombre</h2>
             <p id="m-desc" style="color:#ccc; font-size:15px; line-height:1.5;">Descripción...</p>
-            <a id="m-video" href="#" target="_blank" class="btn-video">📺 Ver Tutorial</a>
+            <a id="m-video" href="#" target="_blank" class="btn-video">📺 Ver Tutorial de Edu García</a>
         </div>
     </div>
 

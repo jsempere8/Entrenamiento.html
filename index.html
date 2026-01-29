@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BioHacker v21: Edu Natural Flow</title>
+    <title>BioHacker v22: Edu Flow</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -21,66 +21,72 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- BIBLIOTECA EDU GARCÍA (MOVIMIENTO NATURAL) ---
+        // --- FILOSOFÍA EDU GARCÍA: MOVIMIENTOS, NO MÚSCULOS ---
         const EXERCISES = {
-            pushups: { 
-                name: "Flexiones Orgánicas", 
+            levantada: { 
+                name: "Levantada (Get-Up)", 
                 rest: 60, 
-                img: "https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?q=80&w=400&auto=format&fit=crop", 
-                desc: "Manos bajo hombros. Codos pegados (flecha). Todo el cuerpo baja en bloque. Activa el abdomen.", 
-                video: "https://www.youtube.com/results?search_query=edugarcia_trainer+flexiones+correctas" 
+                img: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=400&auto=format&fit=crop", 
+                desc: "El ejercicio rey de Edu. Túmbate boca arriba y levántate sin usar las manos (o usando las mínimas posibles). Alterna el lado por el que subes. Fluidez.", 
+                video: "https://www.youtube.com/results?search_query=edugarcia_trainer+levantarse+del+suelo" 
             },
             squats: { 
                 name: "Sentadilla Profunda", 
                 rest: 90, 
                 img: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?q=80&w=400&auto=format&fit=crop", 
-                desc: "Talones pegados. Baja todo lo que tu movilidad permita. Espalda relajada pero recta. Respira.", 
+                desc: "Busca el rango completo. Baja hasta que tu movilidad lo permita sin dolor. Espalda relajada pero activa. Pies planos.", 
                 video: "https://www.youtube.com/results?search_query=edugarcia_trainer+sentadilla+profunda" 
+            },
+            pushups: { 
+                name: "Flexiones Orgánicas", 
+                rest: 60, 
+                img: "https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?q=80&w=400&auto=format&fit=crop", 
+                desc: "Codos pegados al cuerpo (flecha). Todo el cuerpo baja en bloque. Si no puedes, apoya rodillas pero mantén la línea hombro-cadera.", 
+                video: "https://www.youtube.com/results?search_query=edugarcia_trainer+flexiones" 
             },
             lunges: { 
                 name: "Zancada Consciente", 
                 rest: 60, 
                 img: "https://images.unsplash.com/photo-1434608519344-49d77a699ded?q=80&w=400&auto=format&fit=crop", 
-                desc: "Aterriza suave (sin ruido). Controla la bajada. La rodilla de atrás casi besa el suelo.", 
+                desc: "No golpees el suelo. Aterrizaje silencioso. Controla la bajada excéntrica. Tronco erguido.", 
                 video: "https://www.youtube.com/results?search_query=edugarcia_trainer+zancadas" 
+            },
+            row: { 
+                name: "Tracción (Remo)", 
+                rest: 90, 
+                img: "https://images.unsplash.com/photo-1598289431512-b97b0917affc?q=80&w=400&auto=format&fit=crop", 
+                desc: "Fundamental para la postura. Retrae escápulas (junta omóplatos) antes de tirar. Hombros lejos de las orejas.", 
+                video: "https://www.youtube.com/results?search_query=edugarcia_trainer+traccion" 
             },
             plank: { 
                 name: "Plancha Activa", 
                 rest: 45, 
                 img: "https://plus.unsplash.com/premium_photo-1672046218038-f86a978f85f3?q=80&w=400&auto=format&fit=crop", 
-                desc: "Empuja el suelo con antebrazos. Retroversión pélvica (aprieta glúteo). No te hundas.", 
-                video: "https://www.youtube.com/results?search_query=edugarcia_trainer+plancha+abdominal" 
-            },
-            burpees: { 
-                name: "Levantada (Suelo-Arriba)", 
-                rest: 90, 
-                img: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=400&auto=format&fit=crop", 
-                desc: "Baja al suelo y levántate de forma fluida. Alterna la pierna de apoyo. Sin impacto brusco.", 
-                video: "https://www.youtube.com/results?search_query=edugarcia_trainer+levantarse+del+suelo" 
-            },
-            row: { 
-                name: "Tracción / Remo", 
-                rest: 90, 
-                img: "https://images.unsplash.com/photo-1598289431512-b97b0917affc?q=80&w=400&auto=format&fit=crop", 
-                desc: "Usa una mesa, anillas o marco puerta. Retrae escápulas antes de tirar. Hombros lejos de orejas.", 
-                video: "https://www.youtube.com/results?search_query=edugarcia_trainer+traccion+espalda" 
+                desc: "No es aguantar por aguantar. Empuja el suelo activamente. Aprieta glúteo fuerte (retroversión pélvica).", 
+                video: "https://www.youtube.com/results?search_query=edugarcia_trainer+plancha" 
             }
         };
 
-        const WORKOUT_ORDER = ["Torso", "Aeróbico", "Pierna", "Aeróbico", "Full Body"];
+        // --- ESTRUCTURAS DE SESIÓN ---
         const ROUTINES = {
-            "Torso": ["pushups", "row", "plank"],
-            "Pierna": ["squats", "lunges", "plank"],
-            "Full Body": ["burpees", "squats", "pushups"], // Burpee ahora es "Levantada"
-            "Aeróbico": [], "Trekking": []
+            "Full Body": ["levantada", "squats", "pushups", "lunges", "row", "plank"], // La rutina reina
+            "Torso": ["pushups", "row", "plank", "levantada"],
+            "Pierna": ["squats", "lunges", "levantada", "plank"],
+            "Aeróbico": [], 
+            "Trekking": []
         };
 
         // --- ESTILOS ---
         const styles = `
-            :root { --primary: #0a84ff; --bg: #000; --card: #1c1c1e; --text: #fff; --accent: #32d74b; --warning: #ffd60a; --danger: #ff453a; }
+            :root { --primary: #0a84ff; --bg: #000; --card: #1c1c1e; --text: #fff; --accent: #32d74b; --warning: #ffd60a; }
             body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; padding-bottom: 120px; }
             
-            .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; position: sticky; top: 0; background: var(--bg); z-index: 50; padding: 10px 0; border-bottom: 1px solid #111; }
+            .top-bar { margin-bottom: 20px; position: sticky; top: 0; background: var(--bg); z-index: 50; padding: 10px 0; border-bottom: 1px solid #111; }
+            .header-flex { display: flex; justify-content: space-between; align-items: center; }
+            
+            /* SELECTOR MANUAL */
+            .mode-selector { width: 100%; padding: 12px; background: #2c2c2e; color: white; border: 1px solid #444; border-radius: 12px; font-size: 16px; font-weight: bold; margin-top: 10px; appearance: none; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 15px top 50%; background-size: 12px auto; }
+
             .global-timer { font-family: monospace; font-size: 24px; font-weight: 700; color: #666; background: #111; padding: 8px 16px; border-radius: 8px; border: 1px solid #222; min-width: 80px; text-align: center; }
             .global-timer.active { color: var(--primary); border-color: var(--primary); animation: pulse 2s infinite; }
             @keyframes pulse { 0% {box-shadow: 0 0 0 rgba(10,132,255,0);} 50% {box-shadow: 0 0 15px rgba(10,132,255,0.2);} 100% {box-shadow: 0 0 0 rgba(10,132,255,0);} }
@@ -112,7 +118,6 @@
             .finish-card { display: none; margin-top: 30px; background: #1c1c1e; padding: 20px; border-radius: 20px; border: 1px solid #333; }
             .finish-card.visible { display: block; }
             
-            /* Responsive Forms */
             .form-row { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
             .form-group { flex: 1; min-width: 120px; } 
 
@@ -125,10 +130,6 @@
             
             .hr-zone { background: rgba(10, 132, 255, 0.1); border: 1px solid var(--primary); padding: 15px; border-radius: 12px; margin-bottom: 20px; text-align: center; display: none; }
             .hr-val { font-size: 24px; font-weight: 900; color: var(--primary); display: block; margin-top: 5px; }
-            .tomorrow-box { margin-top: 40px; padding: 20px; border-top: 1px solid #333; opacity: 0.8; }
-            .mini-grid { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; margin-top: 10px; }
-            .mini-ex { flex: 0 0 60px; text-align: center; font-size: 10px; }
-            .mini-img { width: 50px; height: 50px; border-radius: 10px; object-fit: cover; margin-bottom: 5px; border: 1px solid #444; }
             
             .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 200; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
             .modal-content { background: #1c1c1e; width: 85%; max-width: 400px; padding: 30px; border-radius: 20px; border: 1px solid #444; text-align: center; position: relative; }
@@ -145,7 +146,7 @@
         // --- ESTADO ---
         let userLevel = 1; let userWeight = 72; let userAge = 30;
         let currentReps = 10;
-        let todayType = "Torso"; let tomorrowType = "Aeróbico";
+        let selectedType = "Full Body"; // POR DEFECTO: LO QUE BUSCAS
         let startTime = 0; let globalInterval = null; let restInterval = null; let editingId = null; 
 
         window.initApp = async () => {
@@ -160,48 +161,30 @@
 
             onSnapshot(query(collection(db, "workouts"), orderBy("date", "desc"), limit(20)), (snap) => {
                 const logs = snap.docs.map(d => ({id:d.id, ...d.data()}));
-                calculateSchedule(logs);
+                // Ya no calculamos calendario automático, cargamos el default
                 renderSession();
                 renderAnalytics(logs);
             });
         };
 
-        function calculateSchedule(logs) {
-            const dayOfWeek = new Date().getDay(); // 0: Domingo, 6: Sabado
-            const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
-
-            if (isWeekend) {
-                // LOGICA FIN DE SEMANA -> TREKKING
-                todayType = "Trekking";
-                tomorrowType = dayOfWeek === 6 ? "Trekking" : "Torso";
-            } else {
-                // LOGICA ENTRE SEMANA
-                if (logs.length === 0) {
-                    todayType = WORKOUT_ORDER[0];
-                } else {
-                    const lastStrengthLog = logs.find(l => ["Torso", "Pierna", "Full Body", "Aeróbico"].includes(l.type));
-                    const lastType = lastStrengthLog ? lastStrengthLog.type : "Full Body";
-                    
-                    const idx = WORKOUT_ORDER.indexOf(lastType);
-                    if (idx === -1) { todayType = "Torso"; } 
-                    else { todayType = WORKOUT_ORDER[(idx + 1) % WORKOUT_ORDER.length]; }
-                }
-                const todayIdx = WORKOUT_ORDER.indexOf(todayType);
-                tomorrowType = WORKOUT_ORDER[(todayIdx + 1) % WORKOUT_ORDER.length];
-            }
-        }
+        // --- CAMBIO MANUAL DE RUTINA ---
+        window.changeRoutine = (newType) => {
+            selectedType = newType;
+            renderSession();
+        };
 
         function renderSession() {
-            document.getElementById('today-title').innerText = todayType;
-            const typeSelect = document.getElementById('inp-type');
-            if(typeSelect) typeSelect.value = todayType;
-            toggleDistField(todayType);
+            // Sincronizar selector
+            const selector = document.getElementById('mode-select');
+            if(selector) selector.value = selectedType;
+
+            toggleDistField(selectedType);
 
             const container = document.getElementById('session-content');
             const hrBox = document.getElementById('hr-box');
             document.getElementById('start-btn-container').style.display = 'block';
 
-            if (todayType === "Aeróbico" || todayType === "Trekking") {
+            if (selectedType === "Aeróbico" || selectedType === "Trekking") {
                 let hrInfo = "";
                 if(userAge > 0) {
                     const maxHr = 220 - userAge;
@@ -213,10 +196,10 @@
                     hrBox.innerHTML = `<div class="hr-zone" style="color:#888; border-color:#444;"><small>⚠️ Actualiza tu edad al finalizar.</small></div>`;
                     hrBox.style.display = 'block';
                 }
-                container.innerHTML = `<div class="ex-card" style="padding:30px; display:block; text-align:center; border-color:var(--warning); color:var(--warning);"><div style="font-size:40px; margin-bottom:10px;">${todayType==="Trekking"?"🏔️":"🏃"}</div><h3>${todayType}</h3><p style="color:#888; margin-top:10px;">Inicia el crono y disfruta.</p></div>`;
+                container.innerHTML = `<div class="ex-card" style="padding:30px; display:block; text-align:center; border-color:var(--warning); color:var(--warning);"><div style="font-size:40px; margin-bottom:10px;">${selectedType==="Trekking"?"🏔️":"🏃"}</div><h3>${selectedType}</h3><p style="color:#888; margin-top:10px;">Inicia el crono y disfruta.</p></div>`;
             } else {
                 hrBox.style.display = 'none';
-                const keys = ROUTINES[todayType];
+                const keys = ROUTINES[selectedType];
                 if (!keys) return;
                 let html = "";
                 keys.forEach(key => {
@@ -225,15 +208,6 @@
                 });
                 container.innerHTML = html;
             }
-            renderTomorrow();
-        }
-
-        function renderTomorrow() {
-            document.getElementById('tmr-type').innerText = tomorrowType;
-            const container = document.getElementById('tmr-icons');
-            const keys = ROUTINES[tomorrowType];
-            if(!keys || keys.length === 0) { container.innerHTML = `<span style="font-size:12px; color:#666;">Día de Cardio / Actividad</span>`; } 
-            else { container.innerHTML = keys.map(k => `<div class="mini-ex" onclick="showInfo('${k}')"><img src="${EXERCISES[k].img}" class="mini-img"><div>${EXERCISES[k].name.split(' ')[0]}</div></div>`).join(''); }
         }
 
         window.showInfo = (key) => {
@@ -257,9 +231,12 @@
             document.getElementById('start-btn-container').classList.add('hidden');
             document.getElementById('finish-section').classList.add('visible');
             document.getElementById('global-timer-ui').classList.add('active');
-            if(todayType !== "Aeróbico" && todayType !== "Trekking") { document.getElementById('panel-active').classList.add('visible'); }
+            if(selectedType !== "Aeróbico" && selectedType !== "Trekking") { document.getElementById('panel-active').classList.add('visible'); }
 
             document.getElementById('inp-date').value = getLocalISO(new Date());
+
+            // Pre-seleccionar tipo en el formulario final para que coincida
+            document.getElementById('inp-type').value = selectedType;
 
             startTime = Date.now();
             if(globalInterval) clearInterval(globalInterval);
@@ -357,7 +334,7 @@
             const btn = document.getElementById('btn-finish');
             btn.innerText = "ACTUALIZAR REGISTRO";
             btn.classList.add('update');
-            document.getElementById('today-title').innerText = "Editando...";
+            // document.getElementById('today-title').innerText = "Editando...";
             window.scrollTo({ top: 300, behavior: 'smooth' });
         };
 
@@ -444,17 +421,24 @@
             <button class="close-modal" onclick="closeModal()">×</button>
             <h2 id="m-title" style="margin-bottom:10px; color:white;">Nombre</h2>
             <p id="m-desc" style="color:#ccc; font-size:15px; line-height:1.5;">Descripción...</p>
-            <a id="m-video" href="#" target="_blank" class="btn-video">📺 Ver Tutorial de Edu García</a>
+            <a id="m-video" href="#" target="_blank" class="btn-video">📺 Ver Tutorial</a>
         </div>
     </div>
 
     <div id="p-train" class="page">
         <div class="top-bar">
-            <div>
-                <div style="font-size:10px; color:#888;">HOY TOCA</div>
-                <h2 id="today-title">...</h2>
+            <div class="header-flex">
+                <div style="font-size:10px; color:#888;">¿QUÉ TOCA HOY?</div>
+                <div id="global-timer-ui" class="global-timer">00:00</div>
             </div>
-            <div id="global-timer-ui" class="global-timer">00:00</div>
+            
+            <select id="mode-select" class="mode-selector" onchange="changeRoutine(this.value)">
+                <option value="Full Body">⚡ Full Body (Edu Flow)</option>
+                <option value="Torso">🦍 Torso</option>
+                <option value="Pierna">🦵 Pierna</option>
+                <option value="Aeróbico">🏃 Cardio / Zona 2</option>
+                <option value="Trekking">🏔️ Trekking / Montaña</option>
+            </select>
         </div>
 
         <div id="hr-box"></div>
@@ -471,11 +455,6 @@
 
         <div id="session-content"></div>
 
-        <div class="tomorrow-box">
-            <div class="tomorrow-title">👀 Próxima: <span id="tmr-type" style="color:white; font-weight:bold;"></span></div>
-            <div id="tmr-icons" class="mini-grid"></div>
-        </div>
-
         <div id="start-btn-container" class="sticky-action">
             <button class="btn-start" onclick="startWorkout()">▶ COMENZAR SESIÓN</button>
         </div>
@@ -484,11 +463,11 @@
             <h3 style="margin-bottom:5px;">Resumen Sesión</h3>
             <p style="color:#666; font-size:12px; margin-bottom:15px;">Copia los datos de tu Apple Watch</p>
             
-            <label>Tipo</label>
+            <label>Tipo Realizado</label>
             <select id="inp-type" onchange="toggleDistField(this.value)">
+                <option value="Full Body">Full Body</option>
                 <option value="Torso">Torso</option>
                 <option value="Pierna">Pierna</option>
-                <option value="Full Body">Full Body</option>
                 <option value="Aeróbico">Aeróbico</option>
                 <option value="Trekking">Trekking</option>
             </select>
